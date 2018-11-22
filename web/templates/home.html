@@ -1,0 +1,82 @@
+{{define "title"}}Home{{end}}
+
+{{define "body"}}
+<!--<div class="container">
+  <h1>Home</h1>
+  <pre>Hello: {{.Hello}}</pre>
+  <a href="request.html">Change the Hello value</a>
+  <br/>
+</div>-->
+<div class="container">
+  <h2>Query Commitments</h2>
+  <hr />
+  <form class="form" action="home.html" method="post">
+    <div class="form-group">
+      <label for="exampleFormControlInput1">Commitment Name</label>
+      <input type="text" class="form-control" id="comname" placeholder="e.g. SellItem" name="comname">
+    </div>
+    <div class="form-group">
+      <label for="exampleFormControlSelect1">Commitment State</label>
+      <select class="form-control" id="exampleFormControlSelect1">
+        <option value="created">Created commitments</option>
+        <option value="detached">Detached commitments</option>
+        <option value="discharged">Discharged commitments</option>
+        <option value="violated">Violated commitments</option>
+        <option value="expired">Expired commitments</option>
+      </select>
+    </div>
+    <input type="hidden" name="submitted" value="true">
+    <button type="submit" class="btn btn-primary">Search</button>
+    {{ if .Response }}
+    {{ if .Failed }}
+    <br />
+    <div class="alert alert-danger" role="alert">
+      Search failed. Please try again.
+    </div>
+    {{ end }}
+    {{ end }}
+  </form>
+</div>
+<br />
+
+<div class="modal fade bd-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Commitment Source</h2>
+      </div>
+      <div class="modal-body">
+        <p>
+          {{.Source}}
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <table class="table table-hover">
+    <thead class="thead-light">
+      <tr>
+        <th scope="col">Name</th>
+        <th scope="col">Owner</th>
+        <th scope="col">Date Created</th>
+        <th scopr="col">Source</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{{.Name}}</td>
+        <td>{{.Owner}}</td>
+        <td>{{.DateCreated}}</td>
+        <td> <!-- Large modal -->
+          <button type="button" class="btn btn-primary" data-toggle="modal" data-target=".bd-example-modal-lg">View Source</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+{{end}}
