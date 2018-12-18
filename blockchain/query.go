@@ -60,6 +60,3 @@ func (setup *FabricSetup) QueryCreated(query string) (string, error) {
   queryStr := fmt.Sprintf("{\"selector\":{\"docType\":\"commitment\"}}")
   return setup.RichQuery(queryStr)
 }
-
-
-

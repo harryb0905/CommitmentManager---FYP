@@ -62,7 +62,7 @@ func main() {
 	}
 
   // Init a commitment on chaincode
-  args := []string{"SellItem", "Harry Baines", "22/11/18", "If SellItem is blah blah blah...", "commitment SellItem dID to cID"}
+  args := []string{"SellItem", "Harry Baines", "22/11/18", "If SellItem is blah blah blah...", "spec SellItem dID to cID"}
   response, err := fSetup.InvokeInitCommitment(args)
   if err != nil {
     fmt.Printf("Unable to initialise commitment on the chaincode: %v\n", err)
@@ -70,8 +70,27 @@ func main() {
     fmt.Printf("Response from commitment initialisation: %s\n", response)
   }
 
+	// Put dummy data on blockchain corresponding to a spec (because we assume data already exists)
+	// Dummy data 1
+	args = []string{"Offer", "Chair", "10.99", "Good"}
+	response, err = fSetup.InvokeInitCommitmentData(args)
+  if err != nil {
+    fmt.Printf("Unable to initialise commitment data on the chaincode: %v\n", err)
+  } else {
+    fmt.Printf("Response from commitment data initialisation: %s\n", response)
+  }
+
+	// Dummy data 2
+	args = []string{"Offer", "Table", "29.99", "Slightly Damaged"}
+	response, err = fSetup.InvokeInitCommitmentData(args)
+  if err != nil {
+    fmt.Printf("Unable to initialise commitment data on the chaincode: %v\n", err)
+  } else {
+    fmt.Printf("Response from commitment data initialisation: %s\n", response)
+  }
+
   // Init another commitment on chaincode
-  args = []string{"Refund", "Harry Baines", "10/05/18", "If Refund is blah blah blah...", "commitment Refund dID to cID"}
+  args = []string{"Refund", "Harry Baines", "10/05/18", "If Refund is blah blah blah...", "spec Refund dID to cID"}
   response, err = fSetup.InvokeInitCommitment(args)
   if err != nil {
     fmt.Printf("Unable to initialise commitment on the chaincode: %v\n", err)
@@ -79,7 +98,7 @@ func main() {
     fmt.Printf("Response from commitment initialisation: %s\n", response)
   }
 
-  // Query a commitment on chaincode
+  // Query a commitment on chaincode - match against existing data
   response, err = fSetup.QueryCommitment("SellItem")
   if err != nil {
     fmt.Printf("Unable to query commitment on the chaincode: %v\n", err)
@@ -88,7 +107,7 @@ func main() {
   }
 
   // Perform paramterised query on chaincode
-  query := fmt.Sprintf("{\"selector\":{\"docType\":\"commitment\",\"name\":\"%s\"}}", "SellItem") 
+  query := fmt.Sprintf("{\"selector\":{\"docType\":\"commitment\",\"name\":\"%s\"}}", "SellItem")
   response, err = fSetup.RichQuery(query)
   if err != nil {
     fmt.Printf("Unable to perform rich query on the chaincode: %v\n", err)
@@ -101,19 +120,31 @@ func main() {
     if err != nil {
       fmt.Println(err)
     } else {
-      fmt.Println(results) 
       for _, res := range results {
         fmt.Println(res.Record.Name, res.Record.Owner, res.Record.Summary)
       }
     }
   }
 
-  // Get all created queries
-  response, err = fSetup.QueryCreated(query)
+  // Query 1: Get SellItem created queries (make a QueryCreated method for this)
+	query = fmt.Sprintf("{\"selector\":{\"docType\":\"Table\",\"name\":\"%s\"}}", "Offer")
+  response, err = fSetup.RichQuery(query)
   if err != nil {
-    fmt.Printf("Unable to perform rich query to get created commitments on the chaincode: %v\n", err)
+    fmt.Printf("Unable to perform rich query on the chaincode: %v\n", err)
   } else {
-    fmt.Printf("Response from the rich query to get created commitments: %s\n", response)
+    fmt.Printf("Response from the rich query: %s\n", response)
+
+    // Unmarshal JSON
+    results := []Result{}
+    err = json.Unmarshal([]byte(response), &results)
+    if err != nil {
+      fmt.Println(err)
+    } else {
+      fmt.Println(results)
+      for _, res := range results {
+        fmt.Println(res.Record)
+      }
+    }
   }
 
 	// Launch the web application listening
@@ -122,4 +153,3 @@ func main() {
 	}
 	web.Serve(app)
 }
-

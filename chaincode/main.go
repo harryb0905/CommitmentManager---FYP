@@ -14,7 +14,7 @@ type HeroesServiceChaincode struct {
 
 type commitment struct {
   ObjectType  string `json:"docType"`     // docType is used to distinguish the various types of objects in state database
-  Name        string `json:"name"`        // the fieldtags are needed to keep case from bouncing around
+  Name        string `json:"name"`        // the field tags are needed to keep case from bouncing around
   Owner       string `json:"owner"`       // Owner/creator of the commitment
   DateCreated string `json:"datecreated"` // Date the commitment was created
   Summary     string `json:"summary"`     // Human-readable string of commitment
@@ -63,6 +63,8 @@ func (t *HeroesServiceChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Res
   // Handle different functions
   if function == "initCommitment" {
     return t.initCommitment(stub, args)
+  } else if function == "initCommitmentData" {
+    return t.initCommitmentData(stub, args)
   } else if function == "readCommitment" {
     return t.readCommitment(stub, args)
   } else if function == "invoke" {
@@ -71,7 +73,7 @@ func (t *HeroesServiceChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Res
     return t.query(stub, args)
   } else if function == "richQuery" {
     return t.richQuery(stub, args)
-  } 
+  }
 
   // If the arguments given don’t match any function, we return an error
   return shim.Error("Unknown action, check the first argument")
@@ -83,7 +85,7 @@ func (t *HeroesServiceChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Res
 func (t *HeroesServiceChaincode) initCommitment(stub shim.ChaincodeStubInterface, args []string) pb.Response {
   var err error
 
-  //   0                1                      2                                     3     
+  //   0                1                      2                                     3
   // "SellItem", "HarryBaines", "If a SellItem is blah blah blah...", "commitment SellItem dID to cID..."
   if len(args) != 5 {
     return shim.Error("Incorrect number of arguments. Expecting 5")
@@ -156,7 +158,76 @@ func (t *HeroesServiceChaincode) initCommitment(stub shim.ChaincodeStubInterface
   // ==== Commitment saved and indexed. Return success ====
   fmt.Println("- end init commitment")
 
-  // Notify listeners that an event "eventInvoke" have been executed (check line 19 in the file invoke.go)
+  // Notify listeners that an event "eventInvoke" have been executed (check line 24 in the file invoke.go)
+  err = stub.SetEvent("eventInvoke", []byte{})
+  if err != nil {
+    return shim.Error(err.Error())
+  }
+
+  return shim.Success(nil)
+}
+
+// ======================================================================
+// initCommitmentData - adds commitment data to blockchain to be queried
+// ======================================================================
+func (t *HeroesServiceChaincode) initCommitmentData(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+  var err error
+
+  //   0        1        2     3
+  // "Offer", "Chair", "10", "Good"
+  if len(args) != 4 {
+    return shim.Error("Incorrect number of arguments. Expecting 4")
+  }
+
+  // ==== Input sanitation ====
+  fmt.Println("- start init commitment")
+  if len(args[0]) <= 0 {
+    return shim.Error("1st argument must be a non-empty string")
+  }
+  if len(args[1]) <= 0 {
+    return shim.Error("2nd argument must be a non-empty string")
+  }
+  if len(args[2]) <= 0 {
+    return shim.Error("3rd argument must be a non-empty string")
+  }
+  if len(args[3]) <= 0 {
+    return shim.Error("4th argument must be a non-empty string")
+  }
+
+  tableName := args[0]
+  itemName := args[1]
+  itemPrice := args[2]
+  itemQuality := args[3]
+
+  // ==== Build the commitment json string manually if you don't want to use struct marshalling ====
+  commitmentJSONasString := `{"docType":"Table", "name": "` + tableName + `", "item": "` + itemName + `", "price": "` + itemPrice + `", "quality": "` + itemQuality + `"}`
+  commitmentJSONasBytes := []byte(commitmentJSONasString)
+
+  // === Save commitment to state ===
+  err = stub.PutState(tableName, commitmentJSONasBytes)
+  if err != nil {
+    return shim.Error(err.Error())
+  }
+
+  // //  ==== Index the commitment to enable color-based range queries, e.g. return all blue commitments ====
+  // //  An 'index' is a normal key/value entry in state.
+  // //  The key is a composite key, with the elements that you want to range query on listed first.
+  // //  In our case, the composite key is based on indexName~name.
+  // //  This will enable very efficient state range queries based on composite keys matching indexName~color~*
+  // indexName := "name"
+  // ownerNameIndexKey, err := stub.CreateCompositeKey(indexName, []string{"Offer"})
+  // if err != nil {
+  //   return shim.Error(err.Error())
+  // }
+  // //  Save index entry to state. Only the key name is needed, no need to store a duplicate copy of the data.
+  // //  Note - passing a 'nil' value will effectively delete the key from state, therefore we pass null character as value
+  // value := []byte{0x00}
+  // stub.PutState(ownerNameIndexKey, value)
+
+  // ==== Data saved and indexed. Return success ====
+  fmt.Println("- end init commitment data")
+
+  // Notify listeners that an event "eventInvoke" have been executed (check line 24 in the file invoke.go)
   err = stub.SetEvent("eventInvoke", []byte{})
   if err != nil {
     return shim.Error(err.Error())
