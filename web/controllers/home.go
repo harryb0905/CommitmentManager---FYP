@@ -2,62 +2,83 @@ package controllers
 
 import (
 	"net/http"
-  "encoding/json"
+	"html/template"
+	"strings"
+	"github.com/chainHero/heroes-service/blockchain"
+	c "github.com/chainHero/heroes-service/commitments"
 )
 
-type commitment struct {
-  ObjectType  string `json:"docType"`      // docType is used to distinguish the various types of objects in state database
-  Name        string `json:"name"`         // the fieldtags are needed to keep case from bouncing around
-  Owner       string `json:"owner"`        // Owner/creator of the commitment
-  DateCreated string `json:"datecreated"`  // Date the commitment was created
-  Summary     string `json:"summary"`      // Human-readable string of commitment
-  Source      string `json:"source"`       // String to store commitment source code (quark)
+var replacer = strings.NewReplacer(
+	"\n", "<br>",
+	"\t", "&emsp;",
+	"spec",
+	`<span style="color:red;">spec</span>`,
+	"to",
+	`<span style="color:red;">to</span>`,
+	"create",
+	`<span style="color:blue;">create</span>`,
+	"detach",
+	`<span style="color:blue;">detach</span>`,
+	"discharge",
+	`<span style="color:blue;">discharge</span>`,
+)
+
+type Application struct {
+	Fabric *blockchain.FabricSetup
 }
 
 func (app *Application) HomeHandler(w http.ResponseWriter, r *http.Request) {
-	helloValue, err1 := app.Fabric.QueryHello()
-	if err1 != nil {
-		http.Error(w, "Unable to query hello on the blockchain", 500)
-	}
-
-  data := &struct {
-    TransactionId string
-    Failed        bool
-    Response      bool
-    Hello         string
-    Name          string
-    Owner         string
-    DateCreated   string
-    Summary       string
-    Source        string
+	data := &struct {
+    TransactionId  string
+    Failed         bool
+		Response			 bool
+    Coms			     []c.QueryResponse
+		ComState			 string
+		SpecName       string
+		SpecSource		 template.HTML
+		SpecSummary		 string
   }{
     TransactionId: "",
     Failed:        true,
-    Response:      false,
-    Hello:         helloValue,
+		Response:			 false,
+    Coms:          nil,
+		ComState:			 "",
+		SpecName:      "",
+		SpecSource:		 ``,
+		SpecSummary:	 "",
   }
   if r.FormValue("submitted") == "true" {
+		// Obtain user input
     comName := r.FormValue("comname")
-    com, err := app.Fabric.QueryCommitment(comName)
-    if err != nil {
-      // http.Error(w, "Unable to query commitment on the blockchain", 500)
-      data.Response = true
-    } else { 
-      s := string(com)
-      res := commitment{}
-      json.Unmarshal([]byte(s), &res)
+		comState := r.Form["commitmentState"][0]
 
-      data.TransactionId = com
-      data.Failed = false
-      data.Response = true
-      data.Name = res.Name
-      data.Owner = res.Owner
-      data.DateCreated = res.DateCreated
-      data.Summary = res.Summary
-      data.Source = res.Source
-    }
+		if (comName != "") {
+			switch comState {
+				case "created":
+		      coms, com, err := c.GetCreatedCommitments(comName, app.Fabric)
+					if err != nil {
+						// http.Error(w, "Unable to query created commitments on the blockchain", 500)
+						data.Response = true
+			    } else {
+					  data.TransactionId = comName
+			      data.Failed = false
+			      data.Response = true
+						data.Coms = coms
+						data.SpecSource = template.HTML(replacer.Replace(com.Source))
+						data.SpecSummary = com.Summary
+			    }
+		    case "detached":
+		      break
+		    case "expired":
+		      break
+		    case "discharged":
+		      break
+		    case "violated":
+		      break
+		  }
+			data.ComState = strings.Title(comState)
+			data.SpecName = comName
+		}
   }
   renderTemplate(w, r, "home.html", data)
 }
-
-

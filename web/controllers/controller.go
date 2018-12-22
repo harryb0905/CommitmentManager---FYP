@@ -2,16 +2,11 @@ package controllers
 
 import (
 	"fmt"
-	"github.com/chainHero/heroes-service/blockchain"
 	"html/template"
 	"net/http"
 	"os"
 	"path/filepath"
 )
-
-type Application struct {
-	Fabric *blockchain.FabricSetup
-}
 
 func renderTemplate(w http.ResponseWriter, r *http.Request, templateName string, data interface{}) {
 	lp := filepath.Join("web", "templates", "layout.html")
