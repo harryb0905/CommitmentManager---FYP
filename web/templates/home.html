@@ -6,7 +6,7 @@
   <form class="form" action="home.html" method="post">
     <div class="form-group">
       <label class="uk-form-label">Specification Name</label>
-      <input class="uk-input" type="text" name="comname" placeholder="Input">
+      <input class="uk-input" type="text" name="comname" placeholder="Search...">
       <label class="uk-form-label">State</label>
       <select class="uk-select" id="stateFormControl" name="commitmentState">
         <option value="created">Created</option>
@@ -35,51 +35,56 @@
         <hr />
         <p><strong>{{ len .Coms }}</strong> {{ .ComState }} {{ .SpecName }} commitment's found:</p>
       </div>
+      <table class="uk-table uk-table-hover uk-table-divider uk-table-striped">
+        <thead>
+          <tr>
+            <th>Commitment Name</th>
+            <th>State</th>
+            <th>Debtor</th>
+            <th>Creditor</th>
+            <th>Creation Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{ range $key, $value := .Coms }}
+            <tr uk-toggle="target: #{{ $value.Record.debtorName }}">
+              <td>{{ $specName }}</td>
+              <td>{{ $state }}</td>
+              <!-- <span class="uk-margin-small-left" uk-icon="pencil"></span> -->
+              <td>{{ $value.Record.debtorName }}</td>
+              <td>{{ $value.Record.creditorName }}</td>
+              <td>{{ $value.Record.offerDate }}</td>
+            </tr>
+            <!-- Modal content -->
+            <div id="{{ $value.Record.debtorName }}" uk-modal>
+              <div class="uk-modal-dialog">
+                <button class="uk-modal-close-default" type="button" uk-close></button>
+                <div class="uk-modal-header">
+                  <h2 class="uk-modal-title">Commitment Metadata</h2>
+                </div>
+                <div class="uk-modal-body">
+                  {{ $rec := $value.Record }}
+                  <p>Summary:</p>
+                  <div id="offer-json">
+                    Create Event: {{ $rec.event }} { <br />
+                      &emsp; id: {{ $value.Key }},<br />
+                      {{ range $key, $value := $value.Record }}
+                        &emsp; {{ $key }}: {{ $value }},<br />
+                      {{ end }}
+                    }
+                  </div>
+                </div>
+                <div class="uk-modal-footer">
+                  <button class="uk-button uk-button-primary uk-modal-close" type="button">Close</button>
+                </div>
+              </div>
+            </div>
+          {{ end }}
+        </tbody>
+      </table>
     {{ else }}
       <p>Couldn't find any `{{ $specName }}` commitments.</p>
     {{ end }}
-    <table class="uk-table uk-table-hover uk-table-divider uk-table-striped">
-      <thead>
-        <tr>
-          <th>Commitment Name</th>
-          <th>State</th>
-          <th>Debtor</th>
-          <th>Creditor</th>
-          <th>Date Created</th>
-        </tr>
-      </thead>
-      <tbody>
-        {{ range $key, $value := .Coms }}
-          <tr uk-toggle="target: #{{ $value.Record.debtorName }}">
-            <td>{{ $specName }}</td>
-            <td>{{ $state }}<span class="uk-margin-small-left" uk-icon="pencil"></span></td>
-            <td>{{ $value.Record.debtorName }}</td>
-            <td>{{ $value.Record.creditorName }}</td>
-            <td>10/13/2018</td>
-          </tr>
-          <!-- Modal content -->
-          <div id="{{ $value.Record.debtorName }}" uk-modal>
-            <div class="uk-modal-dialog">
-              <button class="uk-modal-close-default" type="button" uk-close></button>
-              <div class="uk-modal-header">
-                <h2 class="uk-modal-title">Commitment Metadata</h2>
-              </div>
-              <div class="uk-modal-body">
-                <div>
-                  <p><strong>Event Key:</strong> {{ $value.Key }}</p>
-                  {{ range $key, $value := $value.Record }}
-                    <li><strong>{{ $key }}</strong>: {{ $value }}</li>
-                  {{ end }}
-                </div>
-              </div>
-              <div class="uk-modal-footer">
-                <button class="uk-button uk-button-primary uk-modal-close" type="button">Close</button>
-              </div>
-            </div>
-          </div>
-        {{ end }}
-      </tbody>
-    </table>
   </div>
 </div>
 {{end}}

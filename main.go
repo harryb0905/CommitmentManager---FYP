@@ -2,11 +2,16 @@ package main
 
 import (
 	"fmt"
+	"time"
+	"os"
+	"encoding/json"
 	"github.com/chainHero/heroes-service/blockchain"
 	"github.com/chainHero/heroes-service/web"
 	"github.com/chainHero/heroes-service/web/controllers"
-  "encoding/json"
-	"os"
+)
+
+const (
+	TimeFormat = "Mon Jan _2 15:04:05 2006"
 )
 
 type Commitment struct {
@@ -30,6 +35,7 @@ type QueryResponse struct {
 }
 
 func main() {
+	p := fmt.Println
 	// Definition of the Fabric SDK properties
 	fSetup := blockchain.FabricSetup{
 		// Network parameters
@@ -88,7 +94,7 @@ func main() {
 
 	// Put dummy data on blockchain corresponding to a spec (because we assume data already exists)
 	// Dummy data 1
-	args = []string{"Offer", "Harry", "John", "Chair", "10.99", "Good"}
+	args = []string{"Offer", "Harry", "John", "Chair", "10.99", "Good", time.Date(2018, time.December, 20, 18, 0, 0, 0, time.UTC).Format(TimeFormat)}
 	response, err = fSetup.InvokeInitCommitmentData(args)
   if err != nil {
     fmt.Printf("Unable to initialise commitment data on the chaincode: %v\n", err)
@@ -96,8 +102,13 @@ func main() {
     fmt.Printf("Response from commitment data initialisation: %s\n", response)
   }
 
+	// offerDate := time.Now().AddDate(0, 0, -5)
+	// fmt.Println(offerData.String())
+	// diff := time.Now().Sub(t)
+  // p(diff)
+
 	// Dummy data 2
-	args = []string{"Offer", "Yash", "Georgi", "Lamp", "29.99", "Slightly Damaged"}
+	args = []string{"Offer", "Yash", "Georgi", "Lamp", "29.99", "Slightly Damaged", time.Date(2018, time.December, 20, 20, 0, 0, 0, time.UTC).Format(TimeFormat)}
 	response, err = fSetup.InvokeInitCommitmentData(args)
   if err != nil {
     fmt.Printf("Unable to initialise commitment data on the chaincode: %v\n", err)
@@ -106,7 +117,7 @@ func main() {
   }
 
 	// Dummy data 3
-	args = []string{"Offer", "Simon", "Joe", "Beer", "9.99", "Good"}
+	args = []string{"Pay", "Yash", "Georgi", "29.99", "49 Garstang Road West", "Express Delivery", "5"} // Fix - Offer and Pay should have diff number of args...
 	response, err = fSetup.InvokeInitCommitmentData(args)
   if err != nil {
     fmt.Printf("Unable to initialise commitment data on the chaincode: %v\n", err)
@@ -115,7 +126,7 @@ func main() {
   }
 
 	// Dummy data 4
-	args = []string{"Pay", "Yash", "Georgi", "29.99", "49 Garstang Road West", "Express Delivery", "5"}
+	args = []string{"Offer", "Simon", "Joe", "Beer", "9.99", "Good", time.Date(2018, time.December, 20, 23, 0, 0, 0, time.UTC).Format(TimeFormat)}
 	response, err = fSetup.InvokeInitCommitmentData(args)
   if err != nil {
     fmt.Printf("Unable to initialise commitment data on the chaincode: %v\n", err)
@@ -162,10 +173,10 @@ func main() {
     results := []Result{}
     err := json.Unmarshal([]byte(response), &results)
     if err != nil {
-      fmt.Println(err)
+      p(err)
     } else {
       for _, res := range results {
-        fmt.Println(res.Commitment.Name, res.Commitment.Owner, res.Commitment.Summary)
+        p(res.Commitment.Name, res.Commitment.Owner, res.Commitment.Summary)
       }
     }
   }
@@ -182,11 +193,11 @@ func main() {
     results := []QueryResponse{}
     err = json.Unmarshal([]byte(response), &results)
     if err != nil {
-      fmt.Println(err)
+      p(err)
     } else {
-      fmt.Println(results)
+      p(results)
       for _, res := range results {
-        fmt.Println(res.Value)
+        p(res.Value)
       }
     }
   }

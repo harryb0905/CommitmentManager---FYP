@@ -59,14 +59,10 @@ func (t *HeroesServiceChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Res
   // Handle different functions
   if function == "initCommitment" {
     return t.initCommitment(stub, args)
-  } else if function == "initCommitmentData" {
-    return t.initCommitmentData(stub, args)
   } else if function == "readCommitment" {
     return t.readCommitment(stub, args)
-  } else if function == "invoke" {
-    return t.invoke(stub, args)
-  } else if function == "query" {
-    return t.query(stub, args)
+  } else if function == "initCommitmentData" {
+    return t.initCommitmentData(stub, args)
   } else if function == "richQuery" {
     return t.richQuery(stub, args)
   }
@@ -75,9 +71,9 @@ func (t *HeroesServiceChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Res
   return shim.Error("Unknown action, check the first argument")
 }
 
-// ====================================================================
+// =====================================================================
 // initCommitment - create a new commitment, store into chaincode state
-// ====================================================================
+// =====================================================================
 func (t *HeroesServiceChaincode) initCommitment(stub shim.ChaincodeStubInterface, args []string) pb.Response {
   var err error
 
@@ -167,10 +163,10 @@ func (t *HeroesServiceChaincode) initCommitment(stub shim.ChaincodeStubInterface
 func (t *HeroesServiceChaincode) initCommitmentData(stub shim.ChaincodeStubInterface, args []string) pb.Response {
   var err error
 
-  //   0         1       2       3       4      5
-  // "Offer", "Harry", "John", "Chair", "10", "Good"
-  if len(args) != 6 {
-    return shim.Error("Incorrect number of arguments. Expecting 6")
+  //   0         1       2       3       4      5             6
+  // "Offer", "Harry", "John", "Chair", "10", "Good"  18th Dec 2018 23:00:00
+  if len(args) != 7 {
+    return shim.Error("Incorrect number of arguments. Expecting 7")
   }
 
   // ==== Input sanitation ====
@@ -193,6 +189,9 @@ func (t *HeroesServiceChaincode) initCommitmentData(stub shim.ChaincodeStubInter
   if len(args[5]) <= 0 {
     return shim.Error("6th argument must be a non-empty string")
   }
+  if len(args[6]) <= 0 {
+    return shim.Error("7th argument must be a non-empty string")
+  }
 
   eventName := args[0]
   debtorName := args[1]
@@ -200,6 +199,7 @@ func (t *HeroesServiceChaincode) initCommitmentData(stub shim.ChaincodeStubInter
   itemName := args[3]
   itemPrice := args[4]
   itemQuality := args[5]
+  offerDate := args[6]
 
   // ==== Build the commitment json string manually if you don't want to use struct marshalling ====
   commitmentJSONasString := `
@@ -210,7 +210,8 @@ func (t *HeroesServiceChaincode) initCommitmentData(stub shim.ChaincodeStubInter
       "event": "` + eventName + `",
       "item": "` + itemName + `",
       "price": "` + itemPrice + `",
-      "quality": "` + itemQuality + `"
+      "quality": "` + itemQuality + `",
+      "offerDate": "` + offerDate + `"
     }`
   commitmentJSONasBytes := []byte(commitmentJSONasString)
 
@@ -289,7 +290,7 @@ func (t *HeroesServiceChaincode) readCommitment(stub shim.ChaincodeStubInterface
 // =========================================================================================
 func (t *HeroesServiceChaincode) richQuery(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 
-  //   0
+  //      0
   // "queryString"
   if len(args) < 1 {
     return shim.Error("Incorrect number of arguments. Expecting 1")
@@ -360,66 +361,6 @@ func constructQueryResponseFromIterator(resultsIterator shim.StateQueryIteratorI
   buffer.WriteString("]")
 
   return &buffer, nil
-}
-
-// invoke
-// Every functions that read and write in the ledger will be here
-func (t *HeroesServiceChaincode) invoke(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-  fmt.Println("########### HeroesServiceChaincode invoke ###########")
-
-  if len(args) < 2 {
-    return shim.Error("The number of arguments is insufficient.")
-  }
-
-  // Check if the ledger key is "hello" and process if it is the case. Otherwise it returns an error.
-  if args[0] == "hello" && len(args) == 2 {
-
-    // Write the new value in the ledger
-    err := stub.PutState("hello", []byte(args[1]))
-    if err != nil {
-      return shim.Error("Failed to update state of hello")
-    }
-
-    // Notify listeners that an event "eventInvoke" have been executed (check line 19 in the file invoke.go)
-    err = stub.SetEvent("eventInvoke", []byte{})
-    if err != nil {
-      return shim.Error(err.Error())
-    }
-
-    // Return this value in response
-    return shim.Success(nil)
-  }
-
-  // If the arguments given don’t match any function, we return an error
-  return shim.Error("Unknown invoke action, check the second argument.")
-}
-
-// query
-// Every readonly functions in the ledger will be here
-func (t *HeroesServiceChaincode) query(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-  fmt.Println("########### HeroesServiceChaincode query ###########")
-
-  // Check whether the number of arguments is sufficient
-  if len(args) < 1 {
-    return shim.Error("The number of arguments is insufficient.")
-  }
-
-  // Like the Invoke function, we manage multiple type of query requests with the second argument.
-  // We also have only one possible argument: hello
-  if args[0] == "hello" {
-
-    // Get the state of the value matching the key hello in the ledger
-    state, err := stub.GetState("hello")
-    if err != nil {
-      return shim.Error("Failed to get state of hello")
-    }
-
-    // Return this value in response
-    return shim.Success(state)
-  }
-
-  // If the arguments given don’t match any function, we return an error
-  return shim.Error("Unknown query action, check the second argument.")
 }
 
 func genUUIDv4() (uuid.UUID, error) {

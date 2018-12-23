@@ -67,8 +67,10 @@ func (app *Application) HomeHandler(w http.ResponseWriter, r *http.Request) {
 						data.SpecSource = template.HTML(replacer.Replace(com.Source))
 						data.SpecSummary = com.Summary
 			    }
+					break
 		    case "detached":
-		      break
+		      c.GetDetachedCommitments(comName, app.Fabric)
+					break
 		    case "expired":
 		      break
 		    case "discharged":
