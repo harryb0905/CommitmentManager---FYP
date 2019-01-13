@@ -110,17 +110,17 @@ func GetDetachedCommitments(comName string, fab *blockchain.FabricSetup) (result
 
 			// For each commitment, perform date check with deadline and event date from commitment
 			// 4. Perform Go time arithmetic on deadline (e.g. deadline=5 means payment must occur within 5 days of the offer being created)
-			for _, com := range results {
+			for i, com := range results {
 				// 5. If Pay record exists and that timestamp is within a period of 5 days or less from offer being created, this commitment is detached
 				// Get created commitment that corresponds to this detached commitment
 				for _, createdCom := range createdComs {
 					if (createdCom.Record["comID"].(string) == com.Record["comID"].(string)) {
 						createdDateStr := com.Record["date"].(string)
 						detachedDateStr := createdCom.Record["date"].(string)
-						if (isDateWithinDeadline(createdDateStr, detachedDateStr, deadline)) {
-							fmt.Println("yay - ", createdDateStr, detachedDateStr)
-						} else {
-							fmt.Println("nay")
+						// If detached event date isn't within the specified deadline, remove from results
+						if (!isDateWithinDeadline(createdDateStr, detachedDateStr, deadline)) {
+							results[i] = results[len(results)-1]
+						  results = results[:len(results)-1]
 						}
 					}
 				}
@@ -266,9 +266,9 @@ func GetViolatedCommitments(comName string, fab *blockchain.FabricSetup) (result
 func isDateWithinDeadline(createdDateStr string, detachedDateStr string, deadline int) (within bool) {
 	createEventDate, _ := time.Parse(TimeFormat, createdDateStr)
 	detachEventDate, _ := time.Parse(TimeFormat, detachedDateStr)
-	daysSinceDate := int(detachEventDate.Sub(createEventDate).Hours() / 24)
+	daysDiff := int(createEventDate.Sub(detachEventDate).Hours() / 24)
 
-	if (daysSinceDate >= deadline) {
+	if (daysDiff >= deadline) {
 		return false
 	} else {
 		return true

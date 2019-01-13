@@ -146,7 +146,7 @@ func main() {
 			"amount": "29.99",
 			"address": "49 Garstang Road West",
 			"shippingtype": "Express Delivery",
-			"date": "` + time.Date(2018, time.December, 25, 20, 0, 0, 0, time.UTC).Format(TimeFormat) + `"
+			"date": "` + time.Date(2018, time.December, 26, 20, 0, 0, 0, time.UTC).Format(TimeFormat) + `"
 		 }`,
 	}
 	response, err = fSetup.InvokeInitCommitmentData(jsonStrs)
