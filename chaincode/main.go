@@ -3,7 +3,6 @@ package main
 import (
   "fmt"
   "github.com/hyperledger/fabric/core/chaincode/shim"
-  "github.com/satori/go.uuid"
   pb "github.com/hyperledger/fabric/protos/peer"
 
   "encoding/json"
@@ -161,90 +160,48 @@ func (t *HeroesServiceChaincode) initCommitment(stub shim.ChaincodeStubInterface
 // initCommitmentData - adds commitment data to blockchain to be queried
 // ======================================================================
 func (t *HeroesServiceChaincode) initCommitmentData(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-  var err error
 
-  //   0         1       2       3       4      5             6
-  // "Offer", "Harry", "John", "Chair", "10", "Good"  18th Dec 2018 23:00:00
-  if len(args) != 7 {
-    return shim.Error("Incorrect number of arguments. Expecting 7")
-  }
+  // === Add slice data to database ===
+  for _, commitmentDataJSON := range args {
+    fmt.Println("STR:", commitmentDataJSON)
+    commitmentDataJSONBytes := []byte(commitmentDataJSON)
 
-  // ==== Input sanitation ====
-  fmt.Println("- start init commitment")
-  if len(args[0]) <= 0 {
-    return shim.Error("1st argument must be a non-empty string")
-  }
-  if len(args[1]) <= 0 {
-    return shim.Error("2nd argument must be a non-empty string")
-  }
-  if len(args[2]) <= 0 {
-    return shim.Error("3rd argument must be a non-empty string")
-  }
-  if len(args[3]) <= 0 {
-    return shim.Error("4th argument must be a non-empty string")
-  }
-  if len(args[4]) <= 0 {
-    return shim.Error("5th argument must be a non-empty string")
-  }
-  if len(args[5]) <= 0 {
-    return shim.Error("6th argument must be a non-empty string")
-  }
-  if len(args[6]) <= 0 {
-    return shim.Error("7th argument must be a non-empty string")
-  }
+    // === Obtain event name from current JSON string ===
+    var jsonMap map[string]string
+    json.Unmarshal([]byte(commitmentDataJSON), &jsonMap)
+    eventName := string(jsonMap["docType"])
+    comID := string(jsonMap["comID"])
 
-  eventName := args[0]
-  debtorName := args[1]
-  creditorName := args[2]
-  itemName := args[3]
-  itemPrice := args[4]
-  itemQuality := args[5]
-  offerDate := args[6]
+    // === Save commitment to state creating a new instance with an id ===
+    err := stub.PutState(eventName + comID, commitmentDataJSONBytes)
+    if err != nil {
+      return shim.Error(err.Error())
+    }
 
-  // ==== Build the commitment json string manually if you don't want to use struct marshalling ====
-  commitmentJSONasString := `
-    {
-      "docType":"Event",
-      "debtorName": "` + debtorName + `",
-      "creditorName": "` + creditorName + `",
-      "event": "` + eventName + `",
-      "item": "` + itemName + `",
-      "price": "` + itemPrice + `",
-      "quality": "` + itemQuality + `",
-      "offerDate": "` + offerDate + `"
-    }`
-  commitmentJSONasBytes := []byte(commitmentJSONasString)
+    //  ==== Index the commitment to enable event name-based range queries ====
+    //  An 'index' is a normal key/value entry in state.
+    //  The key is a composite key, with the elements that you want to range query on listed first.
+    //  In our case, the composite key is based on indexName~name.
+    //  This will enable very efficient state range queries based on composite keys matching indexName~eventName~*
+    indexName := "event"
+    ownerNameIndexKey, err := stub.CreateCompositeKey(indexName, []string{eventName})
+    if err != nil {
+      return shim.Error(err.Error())
+    }
 
-  // === Save commitment to state ===
-  ID, err := genUUIDv4()
-  err = stub.PutState(eventName + ID.String(), commitmentJSONasBytes)
-  if err != nil {
-    return shim.Error(err.Error())
-  }
+    //  === Save index entry to state. Only the key name is needed, no need to store a duplicate copy of the data. ===
+    //  === Note - passing a 'nil' value will effectively delete the key from state, therefore we pass null character as value. ===
+    value := []byte{0x00}
+    stub.PutState(ownerNameIndexKey, value)
 
-  //  ==== Index the commitment to enable color-based range queries, e.g. return all blue commitments ====
-  //  An 'index' is a normal key/value entry in state.
-  //  The key is a composite key, with the elements that you want to range query on listed first.
-  //  In our case, the composite key is based on indexName~name.
-  //  This will enable very efficient state range queries based on composite keys matching indexName~color~*
-  indexName := "event"
-  ownerNameIndexKey, err := stub.CreateCompositeKey(indexName, []string{eventName})
-  if err != nil {
-    return shim.Error(err.Error())
-  }
+    // === Data saved and indexed. Return success ===
+    fmt.Println("- end init commitment data")
 
-  //  Save index entry to state. Only the key name is needed, no need to store a duplicate copy of the data.
-  //  Note - passing a 'nil' value will effectively delete the key from state, therefore we pass null character as value
-  value := []byte{0x00}
-  stub.PutState(ownerNameIndexKey, value)
-
-  // ==== Data saved and indexed. Return success ====
-  fmt.Println("- end init commitment data")
-
-  // Notify listeners that an event "eventInvoke" have been executed (check line 24 in the file invoke.go)
-  err = stub.SetEvent("eventInvoke", []byte{})
-  if err != nil {
-    return shim.Error(err.Error())
+    // === Notify listeners that an event "eventInvoke" have been executed (check line 24 in the file invoke.go) ===
+    err = stub.SetEvent("eventInvoke", []byte{})
+    if err != nil {
+      return shim.Error(err.Error())
+    }
   }
 
   return shim.Success(nil)
@@ -361,10 +318,6 @@ func constructQueryResponseFromIterator(resultsIterator shim.StateQueryIteratorI
   buffer.WriteString("]")
 
   return &buffer, nil
-}
-
-func genUUIDv4() (uuid.UUID, error) {
-  return uuid.NewV4()
 }
 
 func main() {

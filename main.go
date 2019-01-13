@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"time"
 	"os"
-	"encoding/json"
+
+	"github.com/satori/go.uuid"
 	"github.com/chainHero/heroes-service/blockchain"
 	"github.com/chainHero/heroes-service/web"
 	"github.com/chainHero/heroes-service/web/controllers"
@@ -35,7 +36,6 @@ type QueryResponse struct {
 }
 
 func main() {
-	p := fmt.Println
 	// Definition of the Fabric SDK properties
 	fSetup := blockchain.FabricSetup{
 		// Network parameters
@@ -92,10 +92,64 @@ func main() {
     fmt.Printf("Response from commitment initialisation: %s\n", response)
   }
 
-	// Put dummy data on blockchain corresponding to a spec (because we assume data already exists)
-	// Dummy data 1
-	args = []string{"Offer", "Harry", "John", "Chair", "10.99", "Good", time.Date(2018, time.December, 20, 18, 0, 0, 0, time.UTC).Format(TimeFormat)}
-	response, err = fSetup.InvokeInitCommitmentData(args)
+	// Add initial data to blockchain (because we assume data already exists)
+	ID1 := genUUIDv4().String()
+	ID2 := genUUIDv4().String()
+	ID3 := genUUIDv4().String()
+
+	jsonStrs := []string{
+	  `{
+			"docType": "Offer",
+			"comID": "` + ID1 + `",
+			"debtor": "Harry",
+			"creditor": "John",
+			"item": "Chair",
+			"price": "10.99",
+			"quality": "Good",
+			"date": "` + time.Date(2018, time.December, 20, 18, 0, 0, 0, time.UTC).Format(TimeFormat) + `"
+	   }`,
+	  `{
+			"docType": "Offer",
+			"comID": "` + ID2 + `",
+			"debtor": "Yash",
+			"creditor": "Georgi",
+			"item": "Lamp",
+			"price": "29.99",
+			"quality": "Slightly Damaged",
+			"date": "` + time.Date(2018, time.December, 20, 20, 0, 0, 0, time.UTC).Format(TimeFormat) + `"
+		 }`,
+	  `{
+			"docType": "Offer",
+			"comID": "` + ID3 + `",
+			"debtor": "Simon",
+			"creditor": "Joe",
+			"item": "Beer",
+			"price": "9.99",
+			"quality": "Good",
+			"date": "` + time.Date(2018, time.December, 20, 23, 0, 0, 0, time.UTC).Format(TimeFormat) + `"
+		 }`,
+		`{
+ 			"docType": "Pay",
+			"comID": "` + ID1 + `",
+			"debtor": "Harry",
+			"creditor": "John",
+ 			"amount": "10.99",
+ 			"address": "49 Garstang Road West",
+ 			"shippingtype": "Express Delivery",
+ 			"date": "` + time.Date(2018, time.December, 22, 20, 0, 0, 0, time.UTC).Format(TimeFormat) + `"
+ 		 }`,
+		`{
+			"docType": "Pay",
+			"comID": "` + ID2 + `",
+			"debtor": "Harry",
+			"creditor": "John",
+			"amount": "29.99",
+			"address": "49 Garstang Road West",
+			"shippingtype": "Express Delivery",
+			"date": "` + time.Date(2018, time.December, 25, 20, 0, 0, 0, time.UTC).Format(TimeFormat) + `"
+		 }`,
+	}
+	response, err = fSetup.InvokeInitCommitmentData(jsonStrs)
   if err != nil {
     fmt.Printf("Unable to initialise commitment data on the chaincode: %v\n", err)
   } else {
@@ -107,104 +161,86 @@ func main() {
 	// diff := time.Now().Sub(t)
   // p(diff)
 
+
 	// Dummy data 2
-	args = []string{"Offer", "Yash", "Georgi", "Lamp", "29.99", "Slightly Damaged", time.Date(2018, time.December, 20, 20, 0, 0, 0, time.UTC).Format(TimeFormat)}
-	response, err = fSetup.InvokeInitCommitmentData(args)
-  if err != nil {
-    fmt.Printf("Unable to initialise commitment data on the chaincode: %v\n", err)
-  } else {
-    fmt.Printf("Response from commitment data initialisation: %s\n", response)
-  }
+	// args = []string{} // Fix - Offer and Pay should have diff number of args...
 
-	// Dummy data 3
-	args = []string{"Pay", "Yash", "Georgi", "29.99", "49 Garstang Road West", "Express Delivery", "5"} // Fix - Offer and Pay should have diff number of args...
-	response, err = fSetup.InvokeInitCommitmentData(args)
-  if err != nil {
-    fmt.Printf("Unable to initialise commitment data on the chaincode: %v\n", err)
-  } else {
-    fmt.Printf("Response from commitment data initialisation: %s\n", response)
-  }
-
-	// Dummy data 4
-	args = []string{"Offer", "Simon", "Joe", "Beer", "9.99", "Good", time.Date(2018, time.December, 20, 23, 0, 0, 0, time.UTC).Format(TimeFormat)}
-	response, err = fSetup.InvokeInitCommitmentData(args)
-  if err != nil {
-    fmt.Printf("Unable to initialise commitment data on the chaincode: %v\n", err)
-  } else {
-    fmt.Printf("Response from commitment data initialisation: %s\n", response)
-  }
 
   // Init another commitment on chaincode
-	args = []string{
-		"Refund",
-		"Harry Baines",
-		"10/05/18",
-		"If Refund is blah blah blah...",
-		`spec Refund dID to cID
-	  	create Offer [item,price,quality]
-	  	detach Pay [amount,address,shippingtype,deadline=10]
-	  	discharge Refund [deadline=2]`,
-	}
-
-  response, err = fSetup.InvokeInitCommitment(args)
-  if err != nil {
-    fmt.Printf("Unable to initialise commitment on the chaincode: %v\n", err)
-  } else {
-    fmt.Printf("Response from commitment initialisation: %s\n", response)
-  }
+	// args = []string{
+	// 	"Refund",
+	// 	"Harry Baines",
+	// 	"10/05/18",
+	// 	"If Refund is blah blah blah...",
+	// 	`spec Refund dID to cID
+	//   	create Offer [item,price,quality]
+	//   	detach Pay [amount,address,shippingtype,deadline=10]
+	//   	discharge Refund [deadline=2]`,
+	// }
+	//
+  // response, err = fSetup.InvokeInitCommitment(args)
+  // if err != nil {
+  //   fmt.Printf("Unable to initialise commitment on the chaincode: %v\n", err)
+  // } else {
+  //   fmt.Printf("Response from commitment initialisation: %s\n", response)
+  // }
 
   // Query a commitment on chaincode - match against existing data
-  response, err = fSetup.QueryCommitment("SellItem")
-  if err != nil {
-    fmt.Printf("Unable to query commitment on the chaincode: %v\n", err)
-  } else {
-    fmt.Printf("Response from the commitment query: %s\n", response)
-  }
+  // response, err = fSetup.QueryCommitment("SellItem")
+  // if err != nil {
+  //   fmt.Printf("Unable to query commitment on the chaincode: %v\n", err)
+  // } else {
+  //   fmt.Printf("Response from the commitment query: %s\n", response)
+  // }
 
   // Perform parameterised query on chaincode
-  query := fmt.Sprintf("{\"selector\":{\"docType\":\"commitment\",\"name\":\"%s\"}}", "SellItem")
-  response, err = fSetup.RichQuery(query)
-  if err != nil {
-    fmt.Printf("Unable to perform rich query on the chaincode: %v\n", err)
-  } else {
-    fmt.Printf("Response from the rich query: %s\n", response)
-
-    // Unmarshal JSON
-    results := []Result{}
-    err := json.Unmarshal([]byte(response), &results)
-    if err != nil {
-      p(err)
-    } else {
-      for _, res := range results {
-        p(res.Commitment.Name, res.Commitment.Owner, res.Commitment.Summary)
-      }
-    }
-  }
+  // query := fmt.Sprintf("{\"selector\":{\"docType\":\"commitment\",\"name\":\"%s\"}}", "SellItem")
+  // response, err = fSetup.RichQuery(query)
+  // if err != nil {
+  //   fmt.Printf("Unable to perform rich query on the chaincode: %v\n", err)
+  // } else {
+  //   fmt.Printf("Response from the rich query: %s\n", response)
+	//
+  //   // Unmarshal JSON
+  //   results := []Result{}
+  //   err := json.Unmarshal([]byte(response), &results)
+  //   if err != nil {
+  //     p(err)
+  //   } else {
+  //     for _, res := range results {
+  //       p(res.Commitment.Name, res.Commitment.Owner, res.Commitment.Summary)
+  //     }
+  //   }
+  // }
 
   // Query 1: Get SellItem created queries (make a QueryCreated method for this)
-	query = fmt.Sprintf("{\"selector\":{\"event\":\"%s\"}}", "Offer")
-  response, err = fSetup.RichQuery(query)
-  if err != nil {
-    fmt.Printf("Unable to perform rich query on the chaincode: %v\n", err)
-  } else {
-    fmt.Printf("Response from the rich query: %s\n", response)
-
-    // Unmarshal JSON
-    results := []QueryResponse{}
-    err = json.Unmarshal([]byte(response), &results)
-    if err != nil {
-      p(err)
-    } else {
-      p(results)
-      for _, res := range results {
-        p(res.Value)
-      }
-    }
-  }
+	// query = fmt.Sprintf("{\"selector\":{\"event\":\"%s\"}}", "Offer")
+  // response, err = fSetup.RichQuery(query)
+  // if err != nil {
+  //   fmt.Printf("Unable to perform rich query on the chaincode: %v\n", err)
+  // } else {
+  //   fmt.Printf("Response from the rich query: %s\n", response)
+	//
+  //   // Unmarshal JSON
+  //   results := []QueryResponse{}
+  //   err = json.Unmarshal([]byte(response), &results)
+  //   if err != nil {
+  //     p(err)
+  //   } else {
+  //     p(results)
+  //     for _, res := range results {
+  //       p(res.Value)
+  //     }
+  //   }
+  // }
 
 	// Launch the web application listening
 	app := &controllers.Application{
 		Fabric: &fSetup,
 	}
 	web.Serve(app)
+}
+
+func genUUIDv4() (uuid.UUID) {
+  return uuid.NewV4()
 }

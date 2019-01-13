@@ -8,9 +8,6 @@ import (
 )
 
 func Serve(app *controllers.Application) {
-	fs := http.FileServer(http.Dir("web/assets"))
-	http.Handle("/assets/", http.StripPrefix("/assets/", fs))
-
 	http.HandleFunc("/home.html", app.HomeHandler)
 	http.HandleFunc("/editor.html", app.EditorHandler)
 

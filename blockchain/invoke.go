@@ -48,10 +48,10 @@ func (setup *FabricSetup) InvokeInitCommitment(inpargs []string) (string, error)
 }
 
 // Add data to blockchain
-func (setup *FabricSetup) InvokeInitCommitmentData(inpargs []string) (string, error) {
+func (setup *FabricSetup) InvokeInitCommitmentData(jsonStrs []string) (string, error) {
 
   // Prepare arguments
-  argBytes := strArrToByteArr(inpargs)
+  argBytes := strArrToByteArr(jsonStrs)
   eventID := "eventInvoke"
 
   // Add data that will be visible in the proposal, like a description of the invoke request

@@ -274,6 +274,14 @@
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:7f569d906bdd20d906b606415b7d794f798f91a62fcfb6a4daa6d50690fb7a3f"
+  name = "github.com/satori/go.uuid"
+  packages = ["."]
+  pruneopts = ""
+  revision = "f58768cc1a7a7e77a3bd49e98cdd21419399b6a3"
+  version = "v1.2.0"
+
+[[projects]]
   digest = "1:7ba2551c9a8de293bc575dbe2c0d862c52252d26f267f784547f059f512471c8"
   name = "github.com/spf13/afero"
   packages = [
@@ -439,6 +447,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/davecgh/go-spew/spew",
     "github.com/hyperledger/fabric-sdk-go/pkg/client/channel",
     "github.com/hyperledger/fabric-sdk-go/pkg/client/event",
     "github.com/hyperledger/fabric-sdk-go/pkg/client/msp",
@@ -450,6 +459,7 @@
     "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk",
     "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl",
     "github.com/pkg/errors",
+    "github.com/satori/go.uuid",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

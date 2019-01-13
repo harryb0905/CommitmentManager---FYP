@@ -36,11 +36,3 @@ func (setup *FabricSetup) RichQuery(query string) (string, error) {
 
   return string(response.Payload), nil
 }
-
-// ================================================================================
-// QueryCreated obtains all the created commitments from the database
-// ================================================================================
-func (setup *FabricSetup) QueryCreated(query string) (string, error) {
-  queryStr := fmt.Sprintf("{\"selector\":{\"docType\":\"commitment\"}}")
-  return setup.RichQuery(queryStr)
-}

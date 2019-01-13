@@ -5,7 +5,7 @@ import (
 	"html/template"
 	"strings"
 	"github.com/chainHero/heroes-service/blockchain"
-	c "github.com/chainHero/heroes-service/commitments"
+	c "github.com/chainHero/heroes-service/chaincode/commitments"
 )
 
 var replacer = strings.NewReplacer(
@@ -69,14 +69,61 @@ func (app *Application) HomeHandler(w http.ResponseWriter, r *http.Request) {
 			    }
 					break
 		    case "detached":
-		      c.GetDetachedCommitments(comName, app.Fabric)
+					coms, com, err := c.GetDetachedCommitments(comName, app.Fabric)
+					if err != nil {
+						// http.Error(w, "Unable to query created commitments on the blockchain", 500)
+						data.Response = true
+			    } else {
+					  data.TransactionId = comName
+			      data.Failed = false
+			      data.Response = true
+						data.Coms = coms
+						data.SpecSource = template.HTML(replacer.Replace(com.Source))
+						data.SpecSummary = com.Summary
+			    }
 					break
 		    case "expired":
-		      break
+					coms, com, err := c.GetDetachedCommitments(comName, app.Fabric)
+					if err != nil {
+						// http.Error(w, "Unable to query created commitments on the blockchain", 500)
+						data.Response = true
+			    } else {
+					  data.TransactionId = comName
+			      data.Failed = false
+			      data.Response = true
+						data.Coms = coms
+						data.SpecSource = template.HTML(replacer.Replace(com.Source))
+						data.SpecSummary = com.Summary
+			    }
+					break
 		    case "discharged":
-		      break
+					coms, com, err := c.GetDischargedCommitments(comName, app.Fabric)
+					if err != nil {
+						// http.Error(w, "Unable to query created commitments on the blockchain", 500)
+						data.Response = true
+			    } else {
+					  data.TransactionId = comName
+			      data.Failed = false
+			      data.Response = true
+						data.Coms = coms
+						data.SpecSource = template.HTML(replacer.Replace(com.Source))
+						data.SpecSummary = com.Summary
+			    }
+					break
 		    case "violated":
-		      break
+					coms, com, err := c.GetViolatedCommitments(comName, app.Fabric)
+					if err != nil {
+						// http.Error(w, "Unable to query created commitments on the blockchain", 500)
+						data.Response = true
+			    } else {
+					  data.TransactionId = comName
+			      data.Failed = false
+			      data.Response = true
+						data.Coms = coms
+						data.SpecSource = template.HTML(replacer.Replace(com.Source))
+						data.SpecSummary = com.Summary
+			    }
+					break
 		  }
 			data.ComState = strings.Title(comState)
 			data.SpecName = comName

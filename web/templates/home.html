@@ -2,7 +2,7 @@
 
 {{define "body"}}
 <div class="uk-container">
-  <h2 class="uk-heading-divider">Query Commitments</h2>
+  <h2 class="uk-heading-divider">Commitment Manager</h2>
   <form class="form" action="home.html" method="post">
     <div class="form-group">
       <label class="uk-form-label">Specification Name</label>
@@ -33,57 +33,63 @@
         <strong>Summary:</strong> {{ .SpecSummary }}
         <pre>{{ .SpecSource }}</pre>
         <hr />
-        <p><strong>{{ len .Coms }}</strong> {{ .ComState }} {{ .SpecName }} commitment's found:</p>
       </div>
-      <table class="uk-table uk-table-hover uk-table-divider uk-table-striped">
-        <thead>
-          <tr>
-            <th>Commitment Name</th>
-            <th>State</th>
-            <th>Debtor</th>
-            <th>Creditor</th>
-            <th>Creation Date</th>
-          </tr>
-        </thead>
-        <tbody>
-          {{ range $key, $value := .Coms }}
-            <tr uk-toggle="target: #{{ $value.Record.debtorName }}">
-              <td>{{ $specName }}</td>
-              <td>{{ $state }}</td>
-              <!-- <span class="uk-margin-small-left" uk-icon="pencil"></span> -->
-              <td>{{ $value.Record.debtorName }}</td>
-              <td>{{ $value.Record.creditorName }}</td>
-              <td>{{ $value.Record.offerDate }}</td>
+      <div class="uk-margin-large-bottom uk-card uk-card-default uk-card-body">
+        <h5 class="uk-card-title">{{ len .Coms }} {{ .ComState }} {{ .SpecName }} commitments found:</h5>
+        <table class="uk-table uk-table-hover uk-table-divider uk-table-striped">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Debtor</th>
+              <th>Creditor</th>
+              <th>Date</th>
+              <th>State</th>
             </tr>
-            <!-- Modal content -->
-            <div id="{{ $value.Record.debtorName }}" uk-modal>
-              <div class="uk-modal-dialog">
-                <button class="uk-modal-close-default" type="button" uk-close></button>
-                <div class="uk-modal-header">
-                  <h2 class="uk-modal-title">Commitment Metadata</h2>
-                </div>
-                <div class="uk-modal-body">
-                  {{ $rec := $value.Record }}
-                  <p>Summary:</p>
-                  <div id="offer-json">
-                    Create Event: {{ $rec.event }} { <br />
-                      &emsp; id: {{ $value.Key }},<br />
-                      {{ range $key, $value := $value.Record }}
-                        &emsp; {{ $key }}: {{ $value }},<br />
-                      {{ end }}
-                    }
+          </thead>
+          <tbody>
+            {{ range $key, $value := .Coms }}
+              <tr uk-toggle="target: #{{ $value.Record.debtor }}">
+                <td>{{ $value.Record.comID }}</td>
+                <td>{{ $value.Record.debtor }}</td>
+                <td>{{ $value.Record.creditor }}</td>
+                <td>{{ $value.Record.date }}</td>
+                <td>
+                  {{ if or (eq $state "Expired") (eq $state "Violated") }}
+                    <span class="uk-label uk-label-danger">{{ $state }}</span>
+                  {{ else }}
+                    <span class="uk-label uk-label-success">{{ $state }}</span>
+                  {{ end }}
+                </td>
+              </tr>
+              <!-- Modal content -->
+              <div id="{{ $value.Record.debtor }}" uk-modal>
+                <div class="uk-modal-dialog">
+                  <button class="uk-modal-close-default" type="button" uk-close></button>
+                  <div class="uk-modal-header">
+                    <h2 class="uk-modal-title">Commitment Data</h2>
+                  </div>
+                  <div class="uk-modal-body">
+                    {{ $rec := $value.Record }}
+                    <div id="offer-json">
+                      Create Event: <br /> { <br />
+                        &emsp; id: {{ $value.Key }},<br />
+                        {{ range $key, $value := $value.Record }}
+                          &emsp; {{ $key }}: {{ $value }},<br />
+                        {{ end }}
+                      }
+                    </div>
+                  </div>
+                  <div class="uk-modal-footer">
+                    <button class="uk-button uk-button-primary uk-modal-close" type="button">Close</button>
                   </div>
                 </div>
-                <div class="uk-modal-footer">
-                  <button class="uk-button uk-button-primary uk-modal-close" type="button">Close</button>
-                </div>
               </div>
-            </div>
-          {{ end }}
-        </tbody>
-      </table>
+            {{ end }}
+          </tbody>
+        </table>
+      </div>
     {{ else }}
-      <p>Couldn't find any `{{ $specName }}` commitments.</p>
+      <p>Couldn't find any {{ .ComState }} `{{ $specName }}` commitments.</p>
     {{ end }}
   </div>
 </div>
