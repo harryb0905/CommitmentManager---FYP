@@ -29,23 +29,31 @@ type Application struct {
 
 func (app *Application) HomeHandler(w http.ResponseWriter, r *http.Request) {
 	data := &struct {
-    TransactionId  string
-    Failed         bool
-		Response			 bool
-    Coms			     []c.QueryResponse
-		ComState			 string
-		SpecName       string
-		SpecSource		 template.HTML
-		SpecSummary		 string
+    TransactionId  		string
+    Failed         		bool
+		Response			 		bool
+		NumComs						int
+		Coms 							[]c.QueryResponse
+		CreatedComData    []c.QueryResponse
+		DetachedComData   []c.QueryResponse
+		DischargedComData []c.QueryResponse
+		ComState			 		string
+		SpecName       		string
+		SpecSource		 		template.HTML
+		SpecSummary		 		string
   }{
-    TransactionId: "",
-    Failed:        true,
-		Response:			 false,
-    Coms:          nil,
-		ComState:			 "",
-		SpecName:      "",
-		SpecSource:		 ``,
-		SpecSummary:	 "",
+    TransactionId: 		 "",
+    Failed:        		 true,
+		Response:			 		 false,
+		NumComs:					 0,
+		Coms:							 nil,
+		CreatedComData:    nil,
+		DetachedComData:   nil,
+		DischargedComData: nil,
+		ComState:			 		 "",
+		SpecName:      		 "",
+		SpecSource:		 		 ``,
+		SpecSummary:	 		 "",
   }
   if r.FormValue("submitted") == "true" {
 		// Obtain user input
@@ -55,7 +63,7 @@ func (app *Application) HomeHandler(w http.ResponseWriter, r *http.Request) {
 		if (comName != "") {
 			switch comState {
 				case "created":
-		      coms, com, err := c.GetCreatedCommitments(comName, app.Fabric)
+		      comStates, com, err := c.GetCreatedCommitments(comName, app.Fabric)
 					if err != nil {
 						// http.Error(w, "Unable to query created commitments on the blockchain", 500)
 						data.Response = true
@@ -63,13 +71,15 @@ func (app *Application) HomeHandler(w http.ResponseWriter, r *http.Request) {
 					  data.TransactionId = comName
 			      data.Failed = false
 			      data.Response = true
-						data.Coms = coms
+						data.NumComs = len(comStates[0].Responses)
+						data.Coms = comStates[0].Responses
+						data.CreatedComData = comStates[0].Responses
 						data.SpecSource = template.HTML(replacer.Replace(com.Source))
 						data.SpecSummary = com.Summary
 			    }
 					break
 		    case "detached":
-					coms, com, err := c.GetDetachedCommitments(comName, app.Fabric)
+					comStates, com, err := c.GetDetachedCommitments(comName, app.Fabric)
 					if err != nil {
 						// http.Error(w, "Unable to query created commitments on the blockchain", 500)
 						data.Response = true
@@ -77,52 +87,19 @@ func (app *Application) HomeHandler(w http.ResponseWriter, r *http.Request) {
 					  data.TransactionId = comName
 			      data.Failed = false
 			      data.Response = true
-						data.Coms = coms
+						data.NumComs = len(comStates[1].Responses)
+						data.Coms = comStates[1].Responses
+						data.DetachedComData = comStates[0].Responses
+						data.DetachedComData = comStates[1].Responses
 						data.SpecSource = template.HTML(replacer.Replace(com.Source))
 						data.SpecSummary = com.Summary
 			    }
 					break
 		    case "expired":
-					coms, com, err := c.GetDetachedCommitments(comName, app.Fabric)
-					if err != nil {
-						// http.Error(w, "Unable to query created commitments on the blockchain", 500)
-						data.Response = true
-			    } else {
-					  data.TransactionId = comName
-			      data.Failed = false
-			      data.Response = true
-						data.Coms = coms
-						data.SpecSource = template.HTML(replacer.Replace(com.Source))
-						data.SpecSummary = com.Summary
-			    }
 					break
 		    case "discharged":
-					coms, com, err := c.GetDischargedCommitments(comName, app.Fabric)
-					if err != nil {
-						// http.Error(w, "Unable to query created commitments on the blockchain", 500)
-						data.Response = true
-			    } else {
-					  data.TransactionId = comName
-			      data.Failed = false
-			      data.Response = true
-						data.Coms = coms
-						data.SpecSource = template.HTML(replacer.Replace(com.Source))
-						data.SpecSummary = com.Summary
-			    }
 					break
 		    case "violated":
-					coms, com, err := c.GetViolatedCommitments(comName, app.Fabric)
-					if err != nil {
-						// http.Error(w, "Unable to query created commitments on the blockchain", 500)
-						data.Response = true
-			    } else {
-					  data.TransactionId = comName
-			      data.Failed = false
-			      data.Response = true
-						data.Coms = coms
-						data.SpecSource = template.HTML(replacer.Replace(com.Source))
-						data.SpecSummary = com.Summary
-			    }
 					break
 		  }
 			data.ComState = strings.Title(comState)
