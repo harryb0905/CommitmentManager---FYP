@@ -141,12 +141,26 @@ func main() {
 		`{
 			"docType": "Pay",
 			"comID": "` + ID2 + `",
-			"debtor": "Harry",
-			"creditor": "John",
+			"debtor": "Yash",
+			"creditor": "Georgi",
 			"amount": "29.99",
-			"address": "49 Garstang Road West",
-			"shippingtype": "Express Delivery",
-			"date": "` + time.Date(2018, time.December, 26, 20, 0, 0, 0, time.UTC).Format(TimeFormat) + `"
+			"address": "87 Hardhorn Road",
+			"shippingtype": "Nominated Day Delivery",
+			"date": "` + time.Date(2018, time.December, 28, 20, 0, 0, 0, time.UTC).Format(TimeFormat) + `"
+		 }`,
+		`{
+ 			"docType": "Delivery",
+ 			"comID": "` + ID1 + `",
+ 			"debtor": "Harry",
+ 			"creditor": "John",
+ 			"date": "` + time.Date(2018, time.December, 24, 20, 0, 0, 0, time.UTC).Format(TimeFormat) + `"
+ 		 }`,
+	  `{
+		  "docType": "Delivery",
+			"comID": "` + ID2 + `",
+			"debtor": "Yash",
+			"creditor": "Georgi",
+			"date": "` + time.Date(2018, time.January, 10, 10, 0, 0, 0, time.UTC).Format(TimeFormat) + `"
 		 }`,
 	}
 	response, err = fSetup.InvokeInitCommitmentData(jsonStrs)

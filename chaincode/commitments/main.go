@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"encoding/json"
 
-	"github.com/davecgh/go-spew/spew"
+	// "github.com/davecgh/go-spew/spew"
 	"github.com/chainHero/heroes-service/blockchain"
 	q "github.com/chainHero/heroes-service/quark"
 	p "github.com/chainHero/heroes-service/quark/parser"
@@ -17,9 +17,14 @@ const (
 	TimeFormat = "Mon Jan _2 15:04:05 2006"
 )
 
-type State struct {
-	Name 			string
-	Responses []QueryResponse
+type Commitment struct {
+	ComID    string
+	States []ComState
+}
+
+type ComState struct {
+	Name 	string
+	Data  map[string]interface{}
 }
 
 type QueryResponse struct {
@@ -27,7 +32,7 @@ type QueryResponse struct {
   Record  map[string]interface{}
 }
 
-type Commitment struct {
+type CommitmentMeta struct {
   Name     string  `json:"name"`
   Source   string  `json:"source"`
   Summary  string  `json:"summary"`
@@ -39,35 +44,49 @@ type Commitment struct {
 // A commitment is created if it exists on the blockchain CouchDB database.
 //
 // =======================================================================================
-func GetCreatedCommitments(comName string, fab *blockchain.FabricSetup) (states []State, com Commitment, err error) {
-	states = []State {
-    State { Name: "Created", Responses: nil, },
-		State { Name: "Detached", Responses: nil, },
-		State { Name: "Discharged", Responses: nil, },
-	}
+func GetCreatedCommitments(comName string, fab *blockchain.FabricSetup) (commitments []Commitment, com CommitmentMeta, err error) {
 
-	// Get all commitment details
+	// Get all commitment details (inc. event names)
   com, spec := getCommitmentDetails(comName, fab)
-	events := []string{spec.CreateEvent.Name, spec.DetachEvent.Name, spec.DischargeEvent.Name}
+	createEvent := spec.CreateEvent.Name
 
-	if (len(events) > 0) {
-		createEvent := events[0]
-		query := fmt.Sprintf(GetEventQuery, createEvent)
-		// Perform query to get created commitment results
-	  response, err := fab.RichQuery(query)
-	  if err != nil {
-	    return nil, com, err;
-	  } else {
-	    // Unmarshal JSON
-	    responses := []QueryResponse{}
-	    err = json.Unmarshal([]byte(response), &responses)
-			states[0].Responses = responses
-			fmt.Println(responses)
-	    return states, com, err;
-	  }
-	}
-	return nil, com, fmt.Errorf("Couldn't get events for this commitment")
+	// Format query and perform query to get created commitment results
+	query := fmt.Sprintf(GetEventQuery, createEvent)
+  response, err := fab.RichQuery(query)
+
+  if err != nil {
+    return nil, com, err;
+  } else {
+    // Unmarshal JSON response from query
+		responses := []QueryResponse{}
+		err = json.Unmarshal([]byte(response), &responses)
+
+		// Create commitments from responses with data per commitment state
+		commitments = []Commitment{}
+		for _, elem := range responses {
+			commitments = append(commitments,
+				Commitment{
+					ComID: elem.Record["comID"].(string),
+					States: []ComState {
+						ComState{
+							Name: "Created",
+							Data: elem.Record,
+						},
+						ComState{Name: "Detached", Data: nil,},
+						ComState{Name: "Discharged", Data: nil,},
+					},
+				},
+			)
+		}
+    return commitments, com, err;
+  }
+
+	return nil, com, fmt.Errorf("Couldn't get %s created commitments", comName)
 }
+
+// func getRecordsByComID(comID string, ) (records []map[string]interface{}) {
+//
+// }
 
 // =========================== GET DETACHED COMMITMENTS ==================================
 //
@@ -77,30 +96,16 @@ func GetCreatedCommitments(comName string, fab *blockchain.FabricSetup) (states 
 // If the commitment isn't detached and the deadline has exceeded, the commitment expires.
 //
 // =======================================================================================
-func GetDetachedCommitments(comName string, fab *blockchain.FabricSetup) (states []State, com Commitment, err error) {
-	states = []State {
-    State { Name: "Created", Responses: nil, },
-		State { Name: "Detached", Responses: nil, },
-		State { Name: "Discharged", Responses: nil, },
-	}
+func GetDetachedCommitments(comName string, wantExpired bool, fab *blockchain.FabricSetup) (commitments []Commitment, com CommitmentMeta, err error) {
+
 	// 1. Check if this commitment has been created (can't be detached if not already created)
-	comStates, _, _ := GetCreatedCommitments(comName, fab)
-	createdComs := comStates[0].Responses
-
-	// 2. Get created event name
-
-	// 2. Get keys from created results slice
-	for _, element := range createdComs {
-		fmt.Println("key:", element.Key)
-	}
+	createdComs, com, err := GetCreatedCommitments(comName, fab)
 
 	// 3. If created, extract the deadline value from the spec source (e.g. deadline=5)
 	com, spec := getCommitmentDetails(comName, fab)
-	events := []string{spec.CreateEvent.Name, spec.DetachEvent.Name, spec.DischargeEvent.Name}
+	detachEvent := spec.DetachEvent.Name
 	detachArgs := spec.DetachEvent.Args
-	spew.Dump(spec)
-
-	fmt.Println("detach args:", detachArgs)
+	// spew.Dump(spec)
 
 	// Get deadline value
 	deadline := 0
@@ -110,47 +115,58 @@ func GetDetachedCommitments(comName string, fab *blockchain.FabricSetup) (states
     }
 	}
 
-	if (len(events) > 0) {
-		detachEvent := events[1]
-		query := fmt.Sprintf(GetEventQuery, detachEvent)
+	// Format and perform query
+	query := fmt.Sprintf(GetEventQuery, detachEvent)
+	response, err := fab.RichQuery(query)
 
-		fmt.Println("detach event:", detachEvent)
+	if err != nil {
+		// return nil, com, err;
+	} else {
+		// 6. Unmarshal JSON response from query
+		responses := []QueryResponse{}
+		_ = json.Unmarshal([]byte(response), &responses)
 
-		response, err := fab.RichQuery(query)
-		fmt.Println("response:", response)
-		if err != nil {
-			// return nil, com, err;
-		} else {
-			// Unmarshal JSON
-			// 6. Obtain results into struct and return a slice of query responses to output in HTML table
-			responses := []QueryResponse{}
-			_ = json.Unmarshal([]byte(response), &responses)
+		// Create commitments from responses with data per commitment state
+		commitments = []Commitment{}
 
-			// For each commitment, perform date check with deadline and event date from commitment
-			// 4. Perform Go time arithmetic on deadline (e.g. deadline=5 means payment must occur within 5 days of the offer being created)
-			for i, com := range responses {
-				// 5. If Pay record exists and that timestamp is within a period of 5 days or less from offer being created, this commitment is detached
+		// 4. Date checks with deadlines on detached results
+		for _, comRes := range responses {
+
+			// 5. If Pay record exists and that timestamp is within a period of 5 days or less from offer being created, this commitment is detached.
+			for _, createdCom := range createdComs {
 				// Get created commitment that corresponds to this detached commitment
-				for _, createdCom := range createdComs {
-					if (createdCom.Record["comID"].(string) == com.Record["comID"].(string)) {
-						createdDateStr := com.Record["date"].(string)
-						detachedDateStr := createdCom.Record["date"].(string)
-						// If detached event date isn't within the specified deadline, remove from results
-						if (!isDateWithinDeadline(createdDateStr, detachedDateStr, deadline)) {
-							responses[i] = responses[len(responses)-1]
-						  responses = responses[:len(responses)-1]
-						}
+				if (createdCom.ComID == comRes.Record["comID"].(string)) {
+					// Extract date for checking deadline
+					createdDateStr := createdCom.States[0].Data["date"].(string)
+					detachedDateStr := comRes.Record["date"].(string)
+
+					// If detached event date is within specified deadline, include in results
+					withinDeadline := isDateWithinDeadline(createdDateStr, detachedDateStr, deadline)
+					if ((withinDeadline && !wantExpired) || (!withinDeadline && wantExpired)) {
+						commitments = append(commitments,
+							Commitment{
+								ComID: comRes.Record["comID"].(string),
+								States: []ComState {
+									ComState{
+										Name: "Created",
+										Data: createdCom.States[0].Data,
+									},
+									ComState{
+										Name: "Detached",
+										Data: comRes.Record,
+									},
+									ComState{Name: "Discharged", Data: nil,},
+								},
+							},
+						)
 					}
 				}
 			}
-
-			states[1].Responses = responses
-
-			return states, com, err;
 		}
+		return commitments, com, err;
 	}
 
-	return nil, com, fmt.Errorf("Couldn't get events for this commitment")
+	return nil, com, fmt.Errorf("Couldn't get %s detached commitments", comName)
 }
 
 // =========================== GET EXPIRED COMMITMENTS ===================================
@@ -158,42 +174,12 @@ func GetDetachedCommitments(comName string, fab *blockchain.FabricSetup) (states
 // Obtains all expired commitments based on a given commitment/spec name
 //
 // =======================================================================================
-func GetExpiredCommitments(comName string, fab *blockchain.FabricSetup) (results []QueryResponse, com Commitment, err error) {
-	// 1. Check if this commitment has been created (can't be detached if not already created)
-	// createdComs, _, _ := GetCreatedCommitments(comName, fab)
-	//
-	// // 2. Get created event name
-	//
-	//
-	// // 2. Get keys from created results slice
-	// for _, element := range createdComs {
-	// 	fmt.Println("key:", element.Key)
-	// }
-	//
-	// // 3. If created, extract the deadline value from the spec source (e.g. deadline=5)
-	// com, spec := getCommitmentDetails(comName, fab)
-	// events := []string{spec.CreateEvent.Name, spec.DetachEvent.Name, spec.DischargeEvent.Name}
-	//
-	// if (len(events) > 0) {
-	// 	detachEvent := events[1]
-	// 	query := fmt.Sprintf(GetEventQuery, detachEvent)
-	//
-	// 	fmt.Println("detach event:", detachEvent)
-	//
-	// 	response, err := fab.RichQuery(query)
-	// 	fmt.Println("response:", response)
-	// 	if err != nil {
-	// 		// return nil, com, err;
-	// 	} else {
-	// 		// Unmarshal JSON
-	// 		results := []QueryResponse{}
-	// 		_ = json.Unmarshal([]byte(response), &results)
-	// 		fmt.Println("detach results:", results)
-	// 		return results, com, err;
-	// 	}
-	// }
-
-	return nil, com, fmt.Errorf("Couldn't get events for this commitment")
+func GetExpiredCommitments(comName string, fab *blockchain.FabricSetup) (commitments []Commitment, com CommitmentMeta, err error) {
+	expiredComs, com, err := GetDetachedCommitments(comName, true, fab)
+	if (err == nil) {
+		return expiredComs, com, err;
+	}
+	return nil, com, fmt.Errorf("Couldn't get %s expired commitments", comName)
 }
 
 // =========================== GET DISCHARGED COMMITMENTS ==================================
@@ -201,92 +187,104 @@ func GetExpiredCommitments(comName string, fab *blockchain.FabricSetup) (results
 // Obtains all discharged commitments based on a given commitment/spec name
 //
 // =========================================================================================
-func GetDischargedCommitments(comName string, fab *blockchain.FabricSetup) (results []QueryResponse, com Commitment, err error) {
+func GetDischargedCommitments(comName string, wantExpired bool, fab *blockchain.FabricSetup) (commitments []Commitment, com CommitmentMeta, err error) {
 	// 1. Check if this commitment has been created (can't be detached if not already created)
-	// createdComs, _, _ := GetCreatedCommitments(comName, fab)
-	//
-	// // 2. Get created event name
-	//
-	//
-	// // 2. Get keys from created results slice
-	// for _, element := range createdComs {
-	// 	fmt.Println("key:", element.Key)
-	// }
-	//
-	// // 3. If created, extract the deadline value from the spec source (e.g. deadline=5)
-	// com, spec := getCommitmentDetails(comName, fab)
-	// events := []string{spec.CreateEvent.Name, spec.DetachEvent.Name, spec.DischargeEvent.Name}
-	//
-	// if (len(events) > 0) {
-	// 	detachEvent := events[1]
-	// 	query := fmt.Sprintf(GetEventQuery, detachEvent)
-	//
-	// 	fmt.Println("detach event:", detachEvent)
-	//
-	// 	response, err := fab.RichQuery(query)
-	// 	fmt.Println("response:", response)
-	// 	if err != nil {
-	// 		// return nil, com, err;
-	// 	} else {
-	// 		// Unmarshal JSON
-	// 		results := []QueryResponse{}
-	// 		_ = json.Unmarshal([]byte(response), &results)
-	// 		fmt.Println("detach results:", results)
-	// 		return results, com, err;
-	// 	}
-	// }
+	detachedComs, com, err := GetDetachedCommitments(comName, false, fab)
 
-	return nil, com, fmt.Errorf("Couldn't get events for this commitment")
+	// 3. If created, extract the deadline value from the spec source (e.g. deadline=5)
+	com, spec := getCommitmentDetails(comName, fab)
+	dischargeEvent := spec.DischargeEvent.Name
+	dischargeArgs := spec.DischargeEvent.Args
+	// spew.Dump(spec)
+
+	// Get deadline value
+	deadline := 0
+	for _, arg := range dischargeArgs {
+    if arg.Name == "deadline" {
+			deadline, _ = strconv.Atoi(arg.Value)
+    }
+	}
+
+	// Format and perform query
+	query := fmt.Sprintf(GetEventQuery, dischargeEvent)
+	response, err := fab.RichQuery(query)
+
+	if err != nil {
+		// return nil, com, err;
+	} else {
+		// 6. Unmarshal JSON response from query
+		responses := []QueryResponse{}
+		_ = json.Unmarshal([]byte(response), &responses)
+
+		// Create commitments from responses with data per commitment state
+		commitments = []Commitment{}
+
+
+		// 4. Date checks with deadlines on detached results
+		for _, comRes := range responses {
+			fmt.Println("comRes:", comRes)
+
+			// 5. If Pay record exists and that timestamp is within a period of 5 days or less from offer being created, this commitment is detached.
+			for _, detachedCom := range detachedComs {
+				fmt.Println(detachedCom.ComID, comRes.Record["comID"].(string))
+
+				// Get created commitment that corresponds to this detached commitment
+				if (detachedCom.ComID == comRes.Record["comID"].(string)) {
+
+					// Extract date for checking deadline
+					createdDateStr := detachedCom.States[0].Data["date"].(string)
+					dischargedDateStr := comRes.Record["date"].(string)
+
+					// If detached event date is within specified deadline, include in results
+					withinDeadline := isDateWithinDeadline(createdDateStr, dischargedDateStr, deadline)
+					if ((withinDeadline && !wantExpired) || (!withinDeadline && wantExpired)) {
+						commitments = append(commitments,
+							Commitment{
+								ComID: comRes.Record["comID"].(string),
+								States: []ComState {
+									ComState{
+										Name: "Created",
+										Data: detachedCom.States[0].Data,
+									},
+									ComState{
+										Name: "Detached",
+										Data: comRes.Record,
+									},
+									ComState{
+										Name: "Discharged",
+										Data: comRes.Record,
+									},
+								},
+							},
+						)
+					}
+				}
+			}
+		}
+		return commitments, com, err;
+	}
+
+	return nil, com, fmt.Errorf("Couldn't get %s detached commitments", comName)
 }
 
-//
 // =========================== GET VIOLATED COMMITMENTS ====================================
 //
 // Obtains all violated commitments based on a given commitment/spec name
 //
 // =========================================================================================
-func GetViolatedCommitments(comName string, fab *blockchain.FabricSetup) (results []QueryResponse, com Commitment, err error) {
-	// 1. Check if this commitment has been created (can't be detached if not already created)
-	// createdComs, _, _ := GetCreatedCommitments(comName, fab)
-	//
-	// // 2. Get created event name
-	//
-	//
-	// // 2. Get keys from created results slice
-	// for _, element := range createdComs {
-	// 	fmt.Println("key:", element.Key)
-	// }
-	//
-	// // 3. If created, extract the deadline value from the spec source (e.g. deadline=5)
-	// com, spec := getCommitmentDetails(comName, fab)
-	// events := []string{spec.CreateEvent.Name, spec.DetachEvent.Name, spec.DischargeEvent.Name}
-	//
-	// if (len(events) > 0) {
-	// 	detachEvent := events[1]
-	// 	query := fmt.Sprintf(GetEventQuery, detachEvent)
-	//
-	// 	fmt.Println("detach event:", detachEvent)
-	//
-	// 	response, err := fab.RichQuery(query)
-	// 	fmt.Println("response:", response)
-	// 	if err != nil {
-	// 		// return nil, com, err;
-	// 	} else {
-	// 		// Unmarshal JSON
-	// 		results := []QueryResponse{}
-	// 		_ = json.Unmarshal([]byte(response), &results)
-	// 		fmt.Println("detach results:", results)
-	// 		return results, com, err;
-	// 	}
-	// }
-
-	return nil, com, fmt.Errorf("Couldn't get events for this commitment")
+func GetViolatedCommitments(comName string, fab *blockchain.FabricSetup) (commitments []Commitment, com CommitmentMeta, err error) {
+	violatedComs, com, err := GetDischargedCommitments(comName, true, fab)
+	if (err == nil) {
+		return violatedComs, com, err;
+	}
+	return nil, com, fmt.Errorf("Couldn't get %s violated commitments", comName)
 }
 
+// Perform Go time arithmetic on deadline (e.g. deadline=5 means payment must occur within 5 days of the offer being created)
 func isDateWithinDeadline(createdDateStr string, detachedDateStr string, deadline int) (within bool) {
 	createEventDate, _ := time.Parse(TimeFormat, createdDateStr)
 	detachEventDate, _ := time.Parse(TimeFormat, detachedDateStr)
-	daysDiff := int(createEventDate.Sub(detachEventDate).Hours() / 24)
+	daysDiff := int(detachEventDate.Sub(createEventDate).Hours() / 24)
 
 	if (daysDiff >= deadline) {
 		return false
@@ -296,18 +294,17 @@ func isDateWithinDeadline(createdDateStr string, detachedDateStr string, deadlin
 }
 
 // Obtains the events for a given commitment (e.g. Offer, Pay, Delivery)
-func getCommitmentDetails(comName string, fab *blockchain.FabricSetup) (res Commitment, spec *p.Spec) {
+func getCommitmentDetails(comName string, fab *blockchain.FabricSetup) (res CommitmentMeta, spec *p.Spec) {
 
 	// Obtain commitment from CouchDB based on the comName
 	response, _ := fab.QueryCommitment(comName)
 
 	// Unmarshal JSON into structure and obtain source code
-	com := Commitment{}
+	com := CommitmentMeta{}
 	json.Unmarshal([]byte(response), &com)
 
 	// Compile specification (using custom built compiler) to obtain events
 	spec, _ = q.Parse(com.Source)
-	fmt.Println("RESPONSE:", )
 
 	// Extract event names and append to slice
 	if (spec != nil) {

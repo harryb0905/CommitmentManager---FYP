@@ -11,10 +11,9 @@
       <select class="uk-select" id="stateFormControl" name="commitmentState">
         <option value="created">Created</option>
         <option value="detached">Detached</option>
-        <option value="discharged">Expired</option>
-        <option value="violated">Discharged</option>
-        <option value="expired">Violated</option>
-        <option value="expired">All</option>
+        <option value="expired">Expired</option>
+        <option value="discharged">Discharged</option>
+        <option value="violated">Violated</option>
       </select>
     </div>
     <input type="hidden" name="submitted" value="true">
@@ -25,16 +24,11 @@
 
   {{ $specName := .SpecName }}
   {{ $state := .ComState }}
-  {{ $createdData := .CreatedComData }}
-  {{ $detachedData := .DetachedComData }}
-  {{ $dischargedData := .DischargedComData }}
 
   <div class="commitments">
     <hr />
     {{ if not .Failed }}
       <div id="spec-summary">
-        <strong>Spec Name:</strong> {{ $specName }}<br />
-        <strong>Summary:</strong> {{ .SpecSummary }}
         <pre>{{ .SpecSource }}</pre>
         <hr />
       </div>
@@ -43,20 +37,21 @@
         <table class="uk-table uk-table-hover uk-table-divider uk-table-striped">
           <thead>
             <tr>
-              <th>ID</th>
+              <th>Commitment ID</th>
               <th>Debtor</th>
               <th>Creditor</th>
-              <th>Date</th>
+              <th>Creation Date</th>
               <th>State</th>
             </tr>
           </thead>
           <tbody>
             {{ range $key, $value := .Coms }}
-              <tr uk-toggle="target: #{{ $value.Record.debtor }}">
-                <td>{{ $value.Record.comID }}</td>
-                <td>{{ $value.Record.debtor }}</td>
-                <td>{{ $value.Record.creditor }}</td>
-                <td>{{ $value.Record.date }}</td>
+              {{ $createdData := (index $value.States 0).Data }}
+              <tr uk-toggle="target: #{{ $createdData.debtor }}">
+                <td>{{ $createdData.comID }}</td>
+                <td>{{ $createdData.debtor }}</td>
+                <td>{{ $createdData.creditor }}</td>
+                <td>{{ $createdData.date }}</td>
                 <td>
                   {{ if or (eq $state "Expired") (eq $state "Violated") }}
                     <span class="uk-label uk-label-danger">{{ $state }}</span>
@@ -66,7 +61,7 @@
                 </td>
               </tr>
               <!-- Modal content -->
-              <div id="{{ $value.Record.debtor }}" uk-modal>
+              <div id="{{ $createdData.debtor }}" uk-modal>
                 <div class="uk-modal-dialog">
                   <button class="uk-modal-close-default" type="button" uk-close></button>
                   <div class="uk-modal-header">
@@ -75,22 +70,24 @@
                   <div class="uk-modal-body">
                     <div id="create-event-json">
                       Create Event: <br /> { <br />
-                        {{ range $key, $item := $value.Record }}
+                        {{ range $key, $item :=  $createdData }}
                           &emsp; {{ $key }}: {{ $item }},<br />
                         {{ end }}
                       }
                     </div>
                     <div id="create-event-json">
+                      {{ $detachedData := (index $value.States 1).Data }}
                       Detach Event: <br /> { <br />
-                        {{ range $key, $value := $detachedData }}
-                          &emsp; {{ $key }}: {{ $value }},<br />
+                        {{ range $key, $item :=  $detachedData }}
+                          &emsp; {{ $key }}: {{ $item }},<br />
                         {{ end }}
                       }
                     </div>
                     <div id="create-event-json">
+                      {{ $dischargedData := (index $value.States 2).Data }}
                       Discharge Event: <br /> { <br />
-                        {{ range $key, $value := $dischargedData }}
-                          &emsp; {{ $key }}: {{ $value }},<br />
+                        {{ range $key, $item :=  $dischargedData }}
+                          &emsp; {{ $key }}: {{ $item }},<br />
                         {{ end }}
                       }
                     </div>
