@@ -170,16 +170,6 @@ func main() {
     fmt.Printf("Response from commitment data initialisation: %s\n", response)
   }
 
-	// offerDate := time.Now().AddDate(0, 0, -5)
-	// fmt.Println(offerData.String())
-	// diff := time.Now().Sub(t)
-  // p(diff)
-
-
-	// Dummy data 2
-	// args = []string{} // Fix - Offer and Pay should have diff number of args...
-
-
   // Init another commitment on chaincode
 	// args = []string{
 	// 	"Refund",
@@ -248,7 +238,7 @@ func main() {
   //   }
   // }
 
-	// Launch the web application listening
+	// Launch the web application
 	app := &controllers.Application{
 		Fabric: &fSetup,
 	}
