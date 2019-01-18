@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/chainHero/heroes-service/web/controllers"
+	"github.com/scc300/scc300-network/web/controllers"
 )
 
 func Serve(app *controllers.Application) {

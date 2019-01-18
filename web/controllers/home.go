@@ -5,8 +5,8 @@ import (
 	"html/template"
 	"strings"
 
-	"github.com/chainHero/heroes-service/blockchain"
-	c "github.com/chainHero/heroes-service/chaincode/commitments"
+	"github.com/scc300/scc300-network/blockchain"
+	c "github.com/scc300/scc300-network/chaincode/commitments"
 )
 
 var replacer = strings.NewReplacer(

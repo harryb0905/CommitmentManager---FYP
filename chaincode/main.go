@@ -9,8 +9,8 @@ import (
   "bytes"
 )
 
-// HeroesServiceChaincode implementation of Chaincode
-type HeroesServiceChaincode struct {
+// SCC300NetworkChaincode implementation of Chaincode
+type SCC300NetworkChaincode struct {
 }
 
 type commitment struct {
@@ -26,8 +26,8 @@ type commitment struct {
 // Init - This function is called only one when the chaincode is instantiated.
 // So the goal is to prepare the ledger to handle future requests.
 // ============================================================
-func (t *HeroesServiceChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
-  fmt.Println("########### HeroesServiceChaincode Init ###########")
+func (t *SCC300NetworkChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
+  fmt.Println("########### SCC300NetworkChaincode Init ###########")
 
   // Get the function and arguments from the request
   function, _ := stub.GetFunctionAndParameters()
@@ -44,8 +44,8 @@ func (t *HeroesServiceChaincode) Init(stub shim.ChaincodeStubInterface) pb.Respo
 // ============================================================
 // Invoke - All future invoke requests will arrive here
 // ============================================================
-func (t *HeroesServiceChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
-  fmt.Println("########### HeroesServiceChaincode Invoke ###########")
+func (t *SCC300NetworkChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
+  fmt.Println("########### SCC300NetworkChaincode Invoke ###########")
 
   // Get the function and arguments from the request
   function, args := stub.GetFunctionAndParameters()
@@ -73,7 +73,7 @@ func (t *HeroesServiceChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Res
 // =====================================================================
 // initCommitment - create a new commitment, store into chaincode state
 // =====================================================================
-func (t *HeroesServiceChaincode) initCommitment(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+func (t *SCC300NetworkChaincode) initCommitment(stub shim.ChaincodeStubInterface, args []string) pb.Response {
   var err error
 
   //   0                1                      2                                     3
@@ -159,7 +159,7 @@ func (t *HeroesServiceChaincode) initCommitment(stub shim.ChaincodeStubInterface
 // ======================================================================
 // initCommitmentData - adds commitment data to blockchain to be queried
 // ======================================================================
-func (t *HeroesServiceChaincode) initCommitmentData(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+func (t *SCC300NetworkChaincode) initCommitmentData(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 
   // === Add slice data to database ===
   for _, commitmentDataJSON := range args {
@@ -210,7 +210,7 @@ func (t *HeroesServiceChaincode) initCommitmentData(stub shim.ChaincodeStubInter
 // ========================================================
 // readCommitment - read a commitment from chaincode state
 // ========================================================
-func (t *HeroesServiceChaincode) readCommitment(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+func (t *SCC300NetworkChaincode) readCommitment(stub shim.ChaincodeStubInterface, args []string) pb.Response {
   var name, jsonResp string
   var err error
 
@@ -245,7 +245,7 @@ func (t *HeroesServiceChaincode) readCommitment(stub shim.ChaincodeStubInterface
 // If this is not desired, follow the queryMarblesForOwner example for parameterized queries.
 // Only available on state databases that support rich query (e.g. CouchDB)
 // =========================================================================================
-func (t *HeroesServiceChaincode) richQuery(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+func (t *SCC300NetworkChaincode) richQuery(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 
   //      0
   // "queryString"
@@ -322,8 +322,8 @@ func constructQueryResponseFromIterator(resultsIterator shim.StateQueryIteratorI
 
 func main() {
   // Start the chaincode and make it ready for futures requests
-  err := shim.Start(new(HeroesServiceChaincode))
+  err := shim.Start(new(SCC300NetworkChaincode))
   if err != nil {
-    fmt.Printf("Error starting Heroes Service chaincode: %s", err)
+    fmt.Printf("Error starting SCC300Network chaincode: %s", err)
   }
 }

@@ -6,9 +6,9 @@ import (
 	"os"
 
 	"github.com/satori/go.uuid"
-	"github.com/chainHero/heroes-service/blockchain"
-	"github.com/chainHero/heroes-service/web"
-	"github.com/chainHero/heroes-service/web/controllers"
+	"github.com/scc300/scc300-network/blockchain"
+	"github.com/scc300/scc300-network/web"
+	"github.com/scc300/scc300-network/web/controllers"
 )
 
 const (
@@ -39,16 +39,16 @@ func main() {
 	// Definition of the Fabric SDK properties
 	fSetup := blockchain.FabricSetup{
 		// Network parameters
-		OrdererID: "orderer.hf.chainhero.io",
+		OrdererID: "orderer.hf.scc300.io",
 
 		// Channel parameters
-		ChannelID:     "chainhero",
-		ChannelConfig: os.Getenv("GOPATH") + "/src/github.com/chainHero/heroes-service/fixtures/artifacts/chainhero.channel.tx",
+		ChannelID:     "scc300",
+		ChannelConfig: os.Getenv("GOPATH") + "/src/github.com/scc300/scc300-network/fixtures/artifacts/scc300.channel.tx",
 
 		// Chaincode parameters
-		ChainCodeID:     "heroes-service",
+		ChainCodeID:     "scc300-network",
 		ChaincodeGoPath: os.Getenv("GOPATH"),
-		ChaincodePath:   "github.com/chainHero/heroes-service/chaincode/",
+		ChaincodePath:   "github.com/scc300/scc300-network/chaincode/",
 		OrgAdmin:        "Admin",
 		OrgName:         "org1",
 		ConfigFile:      "config.yaml",
@@ -146,7 +146,7 @@ func main() {
 			"amount": "29.99",
 			"address": "87 Hardhorn Road",
 			"shippingtype": "Nominated Day Delivery",
-			"date": "` + time.Date(2018, time.December, 28, 20, 0, 0, 0, time.UTC).Format(TimeFormat) + `"
+			"date": "` + time.Date(2018, time.December, 24, 20, 0, 0, 0, time.UTC).Format(TimeFormat) + `"
 		 }`,
 		`{
  			"docType": "Delivery",

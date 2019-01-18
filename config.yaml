@@ -1,4 +1,4 @@
-name: "heroes-service-network"
+name: "scc300-network"
 #
 # Schema version of the content. Used by the SDK to apply the corresponding parsing rules.
 #
@@ -58,17 +58,17 @@ client:
 
   # Root of the MSP directories with keys and certs.
   cryptoconfig:
-    path: ${GOPATH}/src/github.com/chainHero/heroes-service/fixtures/crypto-config
+    path: ${GOPATH}/src/github.com/scc300/scc300-network/fixtures/crypto-config
 
   # Some SDKs support pluggable KV stores, the properties under "credentialStore"
   # are implementation specific
   credentialStore:
-    path: /tmp/heroes-service-store
+    path: /tmp/scc300-network-store
 
     # [Optional]. Specific to the CryptoSuite implementation used by GO SDK. Software-based implementations
     # requiring a key store. PKCS#11 based implementations does not.
     cryptoStore:
-      path: /tmp/heroes-service-msp
+      path: /tmp/scc300-network-msp
 
    # BCCSP config for the client. Used by GO SDK.
   BCCSP:
@@ -96,7 +96,7 @@ client:
 #
 channels:
   # name of the channel
-  chainhero:
+  scc300:
     # Required. list of orderers designated by the application to use for transactions on this
     # channel. This list can be a result of access control ("org1" can only access "ordererA"), or
     # operational decisions to share loads from applications among the orderers.  The values must
@@ -107,7 +107,7 @@ channels:
 
     # Required. list of peers from participating orgs
     peers:
-      peer0.org1.hf.chainhero.io:
+      peer0.org1.hf.scc300.io:
         # [Optional]. will this peer be sent transaction proposals for endorsement? The peer must
         # have the chaincode installed. The app can also use this property to decide which peers
         # to send the chaincode install request. Default: true
@@ -127,7 +127,7 @@ channels:
         # Default: true
         eventSource: true
 
-      peer1.org1.hf.chainhero.io:
+      peer1.org1.hf.scc300.io:
 
     policies:
       #[Optional] options for retrieving channel configuration blocks
@@ -153,11 +153,11 @@ channels:
 #
 organizations:
   org1:
-    mspid: org1.hf.chainhero.io
-    cryptoPath: peerOrganizations/org1.hf.chainhero.io/users/{userName}@org1.hf.chainhero.io/msp
+    mspid: org1.hf.scc300.io
+    cryptoPath: peerOrganizations/org1.hf.scc300.io/users/{userName}@org1.hf.scc300.io/msp
     peers:
-      - peer0.org1.hf.chainhero.io
-      - peer1.org1.hf.chainhero.io
+      - peer0.org1.hf.scc300.io
+      - peer1.org1.hf.scc300.io
 
     # [Optional]. Certificate Authorities issue certificates for identification purposes in a Fabric based
     # network. Typically certificates provisioning is done in a separate process outside of the
@@ -165,7 +165,7 @@ organizations:
     # dynamic certificate management (enroll, revoke, re-enroll). The following section is only for
     # Fabric-CA servers.
     certificateAuthorities:
-      - ca.org1.hf.chainhero.io
+      - ca.org1.hf.scc300.io
 
 #
 # List of orderers to send transaction and channel create/update requests to. For the time
@@ -173,13 +173,13 @@ organizations:
 # SDK is implementation specific. Consult each SDK's documentation for its handling of orderers.
 #
 orderers:
-  orderer.hf.chainhero.io:
+  orderer.hf.scc300.io:
     url: localhost:7050
 
     # these are standard properties defined by the gRPC library
     # they will be passed in as-is to gRPC client constructor
     grpcOptions:
-      ssl-target-name-override: orderer.hf.chainhero.io
+      ssl-target-name-override: orderer.hf.scc300.io
       # These parameters should be set in coordination with the keepalive policy on the server,
       # as incompatible settings can result in closing of connection.
       # When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
@@ -192,20 +192,20 @@ orderers:
 
     tlsCACerts:
       # Certificate location absolute path
-      path: ${GOPATH}/src/github.com/chainHero/heroes-service/fixtures/crypto-config/ordererOrganizations/hf.chainhero.io/tlsca/tlsca.hf.chainhero.io-cert.pem
+      path: ${GOPATH}/src/github.com/scc300/scc300-network/fixtures/crypto-config/ordererOrganizations/hf.scc300.io/tlsca/tlsca.hf.scc300.io-cert.pem
 #
 # List of peers to send various requests to, including endorsement, query
 # and event listener registration.
 #
 peers:
-  peer0.org1.hf.chainhero.io:
+  peer0.org1.hf.scc300.io:
     # this URL is used to send endorsement and query requests
     url: localhost:7051
     # eventUrl is only needed when using eventhub (default is delivery service)
     eventUrl: localhost:7053
 
     grpcOptions:
-      ssl-target-name-override: peer0.org1.hf.chainhero.io
+      ssl-target-name-override: peer0.org1.hf.scc300.io
       # These parameters should be set in coordination with the keepalive policy on the server,
       # as incompatible settings can result in closing of connection.
       # When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
@@ -218,16 +218,16 @@ peers:
 
     tlsCACerts:
       # Certificate location absolute path
-      path: ${GOPATH}/src/github.com/chainHero/heroes-service/fixtures/crypto-config/peerOrganizations/org1.hf.chainhero.io/tlsca/tlsca.org1.hf.chainhero.io-cert.pem
+      path: ${GOPATH}/src/github.com/scc300/scc300-network/fixtures/crypto-config/peerOrganizations/org1.hf.scc300.io/tlsca/tlsca.org1.hf.scc300.io-cert.pem
 
-  peer1.org1.hf.chainhero.io:
+  peer1.org1.hf.scc300.io:
     # this URL is used to send endorsement and query requests
     url: localhost:8051
     # eventUrl is only needed when using eventhub (default is delivery service)
     eventUrl: localhost:8053
 
     grpcOptions:
-      ssl-target-name-override: peer1.org1.hf.chainhero.io
+      ssl-target-name-override: peer1.org1.hf.scc300.io
       # These parameters should be set in coordination with the keepalive policy on the server,
       # as incompatible settings can result in closing of connection.
       # When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
@@ -240,7 +240,7 @@ peers:
 
     tlsCACerts:
       # Certificate location absolute path
-      path: ${GOPATH}/src/github.com/chainHero/heroes-service/fixtures/crypto-config/peerOrganizations/org1.hf.chainhero.io/tlsca/tlsca.org1.hf.chainhero.io-cert.pem
+      path: ${GOPATH}/src/github.com/scc300/scc300-network/fixtures/crypto-config/peerOrganizations/org1.hf.scc300.io/tlsca/tlsca.org1.hf.scc300.io-cert.pem
 
 #
 # Fabric-CA is a special kind of Certificate Authority provided by Hyperledger Fabric which allows
@@ -248,7 +248,7 @@ peers:
 # Certificate Authority instead of Fabric-CA, in which case this section would not be specified.
 #
 certificateAuthorities:
-  ca.org1.hf.chainhero.io:
+  ca.org1.hf.scc300.io:
     url: http://localhost:7054
     # Fabric-CA supports dynamic user enrollment via REST APIs. A "root" user, a.k.a registrar, is
     # needed to enroll and invoke new users.
@@ -258,32 +258,32 @@ certificateAuthorities:
       enrollId: admin
       enrollSecret: adminpw
     # [Optional] The optional name of the CA.
-    caName: ca.org1.hf.chainhero.io
+    caName: ca.org1.hf.scc300.io
     tlsCACerts:
       # Certificate location absolute path
-      path: ${GOPATH}/src/github.com/chainHero/heroes-service/fixtures/crypto-config/peerOrganizations/org1.hf.chainhero.io/ca/ca.org1.hf.chainhero.io-cert.pem
+      path: ${GOPATH}/src/github.com/scc300/scc300-network/fixtures/crypto-config/peerOrganizations/org1.hf.scc300.io/ca/ca.org1.hf.scc300.io-cert.pem
 
 entityMatchers:
   peer:
-    - pattern: (\w*)peer0.org1.hf.chainhero.io(\w*)
+    - pattern: (\w*)peer0.org1.hf.scc300.io(\w*)
       urlSubstitutionExp: localhost:7051
       eventUrlSubstitutionExp: localhost:7053
-      sslTargetOverrideUrlSubstitutionExp: peer0.org1.hf.chainhero.io
-      mappedHost: peer0.org1.hf.chainhero.io
+      sslTargetOverrideUrlSubstitutionExp: peer0.org1.hf.scc300.io
+      mappedHost: peer0.org1.hf.scc300.io
 
-    - pattern: (\w*)peer1.org1.hf.chainhero.io(\w*)
+    - pattern: (\w*)peer1.org1.hf.scc300.io(\w*)
       urlSubstitutionExp: localhost:8051
       eventUrlSubstitutionExp: localhost:8053
-      sslTargetOverrideUrlSubstitutionExp: peer1.org1.hf.chainhero.io
-      mappedHost: peer1.org1.hf.chainhero.io
+      sslTargetOverrideUrlSubstitutionExp: peer1.org1.hf.scc300.io
+      mappedHost: peer1.org1.hf.scc300.io
 
   orderer:
-    - pattern: (\w*)orderer.hf.chainhero.io(\w*)
+    - pattern: (\w*)orderer.hf.scc300.io(\w*)
       urlSubstitutionExp: localhost:7050
-      sslTargetOverrideUrlSubstitutionExp: orderer.hf.chainhero.io
-      mappedHost: orderer.hf.chainhero.io
+      sslTargetOverrideUrlSubstitutionExp: orderer.hf.scc300.io
+      mappedHost: orderer.hf.scc300.io
 
   certificateAuthorities:
-    - pattern: (\w*)ca.org1.hf.chainhero.io(\w*)
+    - pattern: (\w*)ca.org1.hf.scc300.io(\w*)
       urlSubstitutionExp: http://localhost:7054
-      mappedHost: ca.org1.hf.chainhero.io
+      mappedHost: ca.org1.hf.scc300.io
