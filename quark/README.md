@@ -27,27 +27,28 @@ spec SPEC_NAME DEBTOR to CREDITOR
   detach EVENT [ARG_LIST, deadline=X]
   discharge EVENT [ARG_LIST, deadline=Y]
 ```
-> **Note:** Every contract specification **MUST** include a deadline value in the detach and discharge event argument lists.
 
 ```
-| ------------- | -------------------------------------------------- | ------------------------------------------ |
-| Element       | Description                                        | Examples                                   |
-| ------------- | -------------------------------------------------- | ------------------------------------------ |
-| SPEC_NAME     | The name of the specification.                     | SellItem, Refund                           |
-| ------------- | -------------------------------------------------- | ------------------------------------------ |
-| DEBTOR        | The ID/name of the person in debt to the creditor. | dID, debtorName                            |
-| ------------- | -------------------------------------------------- | ------------------------------------------ |
-| EVENT         | The name of the event (akin to relations in SQL).  | Offer, Pay, Delivery                       |
-| ------------- | -------------------------------------------------- | ------------------------------------------ |
-| ARG_LIST      | The list of arguments associated with the event.   | [item,price],                              |
-|               |                                                    | [address,shippingtype,deadline]            |
-| ------------- | -------------------------------------------------- | ------------------------------------------ | 
-| deadline      | The date by which this event should occur.         | detach EVENT [ARG_LIST, deadline=10]       |
-|               | (i.e. no. of days (as an integer) after the        | (i.e. event will be detached if this event |
-|               | previous event occured = deadline date).           | occurs within CREATE_EVENT_DATE+10 days,   |
-|               |                                                    | otherwise the commitment expires)          |
-| ------------- | -------------------------------------------------- | ------------------------------------------ |                                 |
+| --------- | -------------------------------------------------- | ------------------------------------------ |
+| Element   | Description                                        | Examples                                   |
+| --------- | -------------------------------------------------- | ------------------------------------------ |
+| SPEC_NAME | The name of the specification.                     | SellItem, Refund                           |
+| --------- | -------------------------------------------------- | ------------------------------------------ |
+| DEBTOR    | The ID/name of the person in debt to the creditor. | dID, debtorName                            |
+| --------- | -------------------------------------------------- | ------------------------------------------ |
+| EVENT     | The name of the event (akin to relations in SQL).  | Offer, Pay, Delivery                       |
+| --------- | -------------------------------------------------- | ------------------------------------------ |
+| ARG_LIST  | The list of arguments associated with the event.   | [item,price],                              |
+|           |                                                    | [address,shippingtype,deadline]            |
+| --------- | -------------------------------------------------- | ------------------------------------------ |
+| deadline  | The date by which this event should occur.         | detach EVENT [ARG_LIST, deadline=10]       |
+|           | (i.e. no. of days (as an integer) after the        | (i.e. event will be detached if this event |
+|           | previous event occured = deadline date).           | occurs within CREATE_EVENT_DATE+10 days,   |
+|           |                                                    | otherwise the commitment expires)          |
+| --------- | -------------------------------------------------- | ------------------------------------------ |
 ```
+
+> **Note:** Every contract specification **MUST** include a deadline value in the detach and discharge event argument lists.
 
 An example 'SellItem' specification is defined below:
 ```
