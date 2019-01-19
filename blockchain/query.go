@@ -10,7 +10,7 @@ func (setup *FabricSetup) QueryCommitment(name string) (string, error) {
 
   // Prepare arguments
   var args []string
-  args = append(args, "readCommitment")
+  args = append(args, "getCommitment")
   args = append(args, name)
 
   response, err := setup.client.Query(channel.Request{ChaincodeID: setup.ChainCodeID, Fcn: args[0], Args: [][]byte{[]byte(args[1])}})

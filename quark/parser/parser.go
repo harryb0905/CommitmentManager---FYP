@@ -5,7 +5,7 @@ import (
   "io"
 )
 
-// Spec represents a specification of a contract
+// Spec represents a contract specification
 type Spec struct {
   Constraint     *Constraint
   CreateEvent    *Event
@@ -49,7 +49,7 @@ func (event *Event) AddArg(arg Arg) []Arg {
 }
 
 // Parse parses a spec
-func (p *Parser) Parse() (spec *Spec, error) {
+func (p *Parser) Parse() (*Spec, error) {
   com := &Spec{}
 
   // First token should be the "spec" keyword.

@@ -13,12 +13,11 @@ import (
 type SCC300NetworkChaincode struct {
 }
 
-type commitment struct {
+type Commitment struct {
   ObjectType  string `json:"docType"`     // docType is used to distinguish the various types of objects in state database
   Name        string `json:"name"`        // the field tags are needed to keep case from bouncing around
   Owner       string `json:"owner"`       // Owner/creator of the commitment
   DateCreated string `json:"datecreated"` // Date the commitment was created
-  Summary     string `json:"summary"`     // Human-readable string of commitment
   Source      string `json:"source"`      // String to store commitment source code (quark)
 }
 
@@ -58,8 +57,8 @@ func (t *SCC300NetworkChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Res
   // Handle different functions
   if function == "initCommitment" {
     return t.initCommitment(stub, args)
-  } else if function == "readCommitment" {
-    return t.readCommitment(stub, args)
+  } else if function == "getCommitment" {
+    return t.getCommitment(stub, args)
   } else if function == "initCommitmentData" {
     return t.initCommitmentData(stub, args)
   } else if function == "richQuery" {
@@ -78,8 +77,8 @@ func (t *SCC300NetworkChaincode) initCommitment(stub shim.ChaincodeStubInterface
 
   //   0                1                      2                                     3
   // "SellItem", "HarryBaines", "If a SellItem is blah blah blah...", "commitment SellItem dID to cID..."
-  if len(args) != 5 {
-    return shim.Error("Incorrect number of arguments. Expecting 5")
+  if len(args) != 4 {
+    return shim.Error("Incorrect number of arguments. Expecting 4")
   }
 
   // ==== Input sanitation ====
@@ -96,14 +95,11 @@ func (t *SCC300NetworkChaincode) initCommitment(stub shim.ChaincodeStubInterface
   if len(args[3]) <= 0 {
     return shim.Error("4th argument must be a non-empty string")
   }
-  if len(args[4]) <= 0 {
-    return shim.Error("5th argument must be a non-empty string")
-  }
+
   commitmentName := args[0]
   owner := args[1]
   datecreated := args[2]
-  summary := args[3]
-  source := args[4]
+  source := args[3]
 
   // ==== Check if commitment already exists ====
   commitmentAsBytes, err := stub.GetState(commitmentName)
@@ -116,7 +112,7 @@ func (t *SCC300NetworkChaincode) initCommitment(stub shim.ChaincodeStubInterface
 
   // ==== Create commitment object and marshal to JSON ====
   objectType := "commitment"
-  commitment := &commitment{objectType, commitmentName, owner, datecreated, summary, source}
+  commitment := &Commitment{objectType, commitmentName, owner, datecreated, source}
   commitmentJSONasBytes, err := json.Marshal(commitment)
   if err != nil {
     return shim.Error(err.Error())
@@ -208,9 +204,9 @@ func (t *SCC300NetworkChaincode) initCommitmentData(stub shim.ChaincodeStubInter
 }
 
 // ========================================================
-// readCommitment - read a commitment from chaincode state
+// getCommitment - read a commitment from chaincode state
 // ========================================================
-func (t *SCC300NetworkChaincode) readCommitment(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+func (t *SCC300NetworkChaincode) getCommitment(stub shim.ChaincodeStubInterface, args []string) pb.Response {
   var name, jsonResp string
   var err error
 

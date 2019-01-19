@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/scc300/scc300-network/blockchain"
-	c "github.com/scc300/scc300-network/chaincode/commitments"
+	c "github.com/scc300/scc300-network/commitments"
 )
 
 var replacer = strings.NewReplacer(

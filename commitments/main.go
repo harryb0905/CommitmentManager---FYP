@@ -1,4 +1,4 @@
-package quark
+package commitments
 
 import (
 	"fmt"

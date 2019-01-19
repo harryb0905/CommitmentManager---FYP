@@ -78,7 +78,6 @@ func main() {
 		"SellItem",
 		"Harry Baines",
 		"22/11/18",
-		"If SellItem is blah blah blah...",
 		`spec SellItem dID to cID
 	  	create Offer [item,price,quality]
 	  	detach Pay [amount,address,shippingtype,deadline=5]
@@ -175,7 +174,6 @@ func main() {
 	// 	"Refund",
 	// 	"Harry Baines",
 	// 	"10/05/18",
-	// 	"If Refund is blah blah blah...",
 	// 	`spec Refund dID to cID
 	//   	create Offer [item,price,quality]
 	//   	detach Pay [amount,address,shippingtype,deadline=10]

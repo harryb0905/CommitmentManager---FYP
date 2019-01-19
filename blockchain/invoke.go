@@ -16,7 +16,6 @@ func (setup *FabricSetup) InvokeInitCommitment(inpargs []string) (string, error)
   args = append(args, inpargs[1])
   args = append(args, inpargs[2])
   args = append(args, inpargs[3])
-  args = append(args, inpargs[4])
 
   eventID := "eventInvoke"
 
@@ -31,7 +30,7 @@ func (setup *FabricSetup) InvokeInitCommitment(inpargs []string) (string, error)
   defer setup.event.Unregister(reg)
 
   // Create a request (proposal) and send it
-  response, err := setup.client.Execute(channel.Request{ChaincodeID: setup.ChainCodeID, Fcn: args[0], Args: [][]byte{[]byte(args[1]), []byte(args[2]), []byte(args[3]), []byte(args[4]), []byte(args[5])}, TransientMap: transientDataMap})
+  response, err := setup.client.Execute(channel.Request{ChaincodeID: setup.ChainCodeID, Fcn: args[0], Args: [][]byte{[]byte(args[1]), []byte(args[2]), []byte(args[3]), []byte(args[4])}, TransientMap: transientDataMap})
   if err != nil {
     return "", fmt.Errorf("failed to move funds: %v", err)
   }
