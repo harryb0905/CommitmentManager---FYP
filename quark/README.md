@@ -15,7 +15,7 @@ Payment and delivery criteria can also be defined.
 
 A commitment refers to an instance of a specification. 
 
-[ExampleSTF]: ./images/ExampleSTD.png
+![ExampleSTD](./images/ExampleSTD.png)
 
 ## Syntax
 
