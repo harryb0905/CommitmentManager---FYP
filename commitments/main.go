@@ -5,11 +5,12 @@ import (
 	"time"
 	"strconv"
 	"encoding/json"
+  "math"
 
 	// "github.com/davecgh/go-spew/spew"
 	"github.com/scc300/scc300-network/blockchain"
 	q "github.com/scc300/scc300-network/quark"
-	p "github.com/scc300/scc300-network/quark/parser"
+  p "github.com/scc300/scc300-network/quark/parser"
 )
 
 const (
@@ -40,8 +41,8 @@ type CommitmentMeta struct {
 
 // =========================== GET CREATED COMMITMENTS ===================================
 //
-// Obtains all created commitments based on a given commitment/spec name.
-// A commitment is created if it exists on the blockchain CouchDB database.
+//  Obtains all created commitments based on a given commitment/spec name.
+//  A commitment is created if it exists on the blockchain CouchDB database.
 //
 // =======================================================================================
 func GetCreatedCommitments(comName string, fab *blockchain.FabricSetup) (commitments []Commitment, com CommitmentMeta, err error) {
@@ -90,10 +91,10 @@ func GetCreatedCommitments(comName string, fab *blockchain.FabricSetup) (commitm
 
 // =========================== GET DETACHED COMMITMENTS ==================================
 //
-// Obtains all detached commitments based on a given commitment/spec name.
-// A commitment is detached if the created event exists on the blockchain CouchDB database
-// and the detached event has occured within the specified deadline.
-// If the commitment isn't detached and the deadline has exceeded, the commitment expires.
+//  Obtains all detached commitments based on a given commitment/spec name.
+//  A commitment is detached if the created event exists on the blockchain CouchDB database
+//  and the detached event has occured within the specified deadline.
+//  If the commitment isn't detached and the deadline has exceeded, the commitment expires.
 //
 // =======================================================================================
 func GetDetachedCommitments(comName string, wantExpired bool, fab *blockchain.FabricSetup) (commitments []Commitment, com CommitmentMeta, err error) {
@@ -108,10 +109,10 @@ func GetDetachedCommitments(comName string, wantExpired bool, fab *blockchain.Fa
 	// spew.Dump(spec)
 
 	// Get deadline value
-	deadline := 0
+	deadline := 0.0
 	for _, arg := range detachArgs {
     if arg.Name == "deadline" {
-			deadline, _ = strconv.Atoi(arg.Value)
+			deadline, _ = strconv.ParseFloat(arg.Value, 64)
     }
 	}
 
@@ -171,7 +172,7 @@ func GetDetachedCommitments(comName string, wantExpired bool, fab *blockchain.Fa
 
 // =========================== GET EXPIRED COMMITMENTS ===================================
 //
-// Obtains all expired commitments based on a given commitment/spec name
+//  Obtains all expired commitments based on a given commitment/spec name
 //
 // =======================================================================================
 func GetExpiredCommitments(comName string, fab *blockchain.FabricSetup) (commitments []Commitment, com CommitmentMeta, err error) {
@@ -184,7 +185,7 @@ func GetExpiredCommitments(comName string, fab *blockchain.FabricSetup) (commitm
 
 // =========================== GET DISCHARGED COMMITMENTS ==================================
 //
-// Obtains all discharged commitments based on a given commitment/spec name
+//  Obtains all discharged commitments based on a given commitment/spec name
 //
 // =========================================================================================
 func GetDischargedCommitments(comName string, wantExpired bool, fab *blockchain.FabricSetup) (commitments []Commitment, com CommitmentMeta, err error) {
@@ -198,10 +199,10 @@ func GetDischargedCommitments(comName string, wantExpired bool, fab *blockchain.
 	// spew.Dump(spec)
 
 	// Get deadline value
-	deadline := 0
+	deadline := 0.0
 	for _, arg := range dischargeArgs {
     if arg.Name == "deadline" {
-			deadline, _ = strconv.Atoi(arg.Value)
+			deadline, _ = strconv.ParseFloat(arg.Value, 64)
     }
 	}
 
@@ -219,10 +220,8 @@ func GetDischargedCommitments(comName string, wantExpired bool, fab *blockchain.
 		// Create commitments from responses with data per commitment state
 		commitments = []Commitment{}
 
-
 		// 4. Date checks with deadlines on detached results
 		for _, comRes := range responses {
-			fmt.Println("comRes:", comRes)
 
 			// 5. If Pay record exists and that timestamp is within a period of 5 days or less from offer being created, this commitment is detached.
 			for _, detachedCom := range detachedComs {
@@ -236,7 +235,6 @@ func GetDischargedCommitments(comName string, wantExpired bool, fab *blockchain.
 
 					// If detached event date is within specified deadline, include in results
 					withinDeadline := isDateWithinDeadline(createdDateStr, dischargedDateStr, deadline)
-					fmt.Println("within deadline:", withinDeadline)
 					if ((withinDeadline && !wantExpired) || (!withinDeadline && wantExpired)) {
 						commitments = append(commitments,
 							Commitment{
@@ -248,7 +246,7 @@ func GetDischargedCommitments(comName string, wantExpired bool, fab *blockchain.
 									},
 									ComState{
 										Name: "Detached",
-										Data: comRes.Record,
+										Data: detachedCom.States[1].Data,
 									},
 									ComState{
 										Name: "Discharged",
@@ -269,12 +267,11 @@ func GetDischargedCommitments(comName string, wantExpired bool, fab *blockchain.
 
 // =========================== GET VIOLATED COMMITMENTS ====================================
 //
-// Obtains all violated commitments based on a given commitment/spec name
+//  Obtains all violated commitments based on a given commitment/spec name
 //
 // =========================================================================================
 func GetViolatedCommitments(comName string, fab *blockchain.FabricSetup) (commitments []Commitment, com CommitmentMeta, err error) {
 	violatedComs, com, err := GetDischargedCommitments(comName, true, fab)
-	fmt.Println("got::", violatedComs)
 	if (err == nil) {
 		return violatedComs, com, err;
 	}
@@ -282,12 +279,12 @@ func GetViolatedCommitments(comName string, fab *blockchain.FabricSetup) (commit
 }
 
 // Perform Go time arithmetic on deadline (e.g. deadline=5 means payment must occur within 5 days of the offer being created)
-func isDateWithinDeadline(createdDateStr string, detachedDateStr string, deadline int) (within bool) {
+func isDateWithinDeadline(createdDateStr string, detachedDateStr string, deadline float64) (within bool) {
 	createEventDate, _ := time.Parse(TimeFormat, createdDateStr)
 	detachEventDate, _ := time.Parse(TimeFormat, detachedDateStr)
-	daysDiff := int(detachEventDate.Sub(createEventDate).Hours() / 24)
+	daysDiff := float64(detachEventDate.Sub(createEventDate).Hours() / 24)
 
-	if (daysDiff >= deadline) {
+	if (math.Abs(daysDiff) >= deadline) {
 		return false
 	} else {
 		return true
@@ -307,9 +304,5 @@ func getCommitmentDetails(comName string, fab *blockchain.FabricSetup) (res Comm
 	// Compile specification (using custom built compiler) to obtain events
 	spec, _ = q.Parse(com.Source)
 
-	// Extract event names and append to slice
-	if (spec != nil) {
-	  return com, spec;
-	}
-	return com, nil
+	return com, spec;
 }

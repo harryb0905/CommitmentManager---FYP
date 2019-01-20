@@ -1,0 +1,4 @@
+spec SellItem dID to cID
+  create Offer [item,price,quality]
+  detach Pay [amount,address,shippingtype,deadline=5]
+  discharge Delivery [deadline=5]
