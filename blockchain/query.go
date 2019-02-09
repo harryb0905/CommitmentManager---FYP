@@ -5,12 +5,12 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 )
 
-// QueryCommitment query the chaincode to get the state of a commitment
-func (setup *FabricSetup) QueryCommitment(name string) (string, error) {
+// GetSpec - query the chaincode to get the state of a spec
+func (setup *FabricSetup) GetSpec(name string) (string, error) {
 
   // Prepare arguments
   var args []string
-  args = append(args, "getCommitment")
+  args = append(args, "getSpec")
   args = append(args, name)
 
   response, err := setup.client.Query(channel.Request{ChaincodeID: setup.ChainCodeID, Fcn: args[0], Args: [][]byte{[]byte(args[1])}})
@@ -21,7 +21,7 @@ func (setup *FabricSetup) QueryCommitment(name string) (string, error) {
   return string(response.Payload), nil
 }
 
-// RichQuery query the chaincode to perform an ad hoc rich query based on input
+// RichQuery - query the chaincode to perform an ad hoc rich query based on input
 func (setup *FabricSetup) RichQuery(query string) (string, error) {
 
   // Prepare arguments

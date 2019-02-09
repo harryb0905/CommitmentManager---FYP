@@ -13,20 +13,19 @@ import (
 type SCC300NetworkChaincode struct {
 }
 
-type Commitment struct {
+type Spec struct {
   ObjectType  string `json:"docType"`     // docType is used to distinguish the various types of objects in state database
-  Name        string `json:"name"`        // the field tags are needed to keep case from bouncing around
-  Owner       string `json:"owner"`       // Owner/creator of the commitment
-  DateCreated string `json:"datecreated"` // Date the commitment was created
-  Source      string `json:"source"`      // String to store commitment source code (quark)
+  Name        string `json:"name"`        // Spec name - the field tags are needed to keep case from bouncing around
+  Source      string `json:"source"`      // String to store spec source code (quark)
 }
 
 // ============================================================
+//
 // Init - This function is called only one when the chaincode is instantiated.
-// So the goal is to prepare the ledger to handle future requests.
+// Goal is to prepare the ledger to handle future requests.
+//
 // ============================================================
 func (t *SCC300NetworkChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
-  fmt.Println("########### SCC300NetworkChaincode Init ###########")
 
   // Get the function and arguments from the request
   function, _ := stub.GetFunctionAndParameters()
@@ -44,106 +43,95 @@ func (t *SCC300NetworkChaincode) Init(stub shim.ChaincodeStubInterface) pb.Respo
 // Invoke - All future invoke requests will arrive here
 // ============================================================
 func (t *SCC300NetworkChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
-  fmt.Println("########### SCC300NetworkChaincode Invoke ###########")
 
-  // Get the function and arguments from the request
+  // ==== Get the function and arguments from the request ====
   function, args := stub.GetFunctionAndParameters()
 
-  // Check whether the number of arguments is sufficient
+  // ==== Check whether the number of arguments is sufficient ====
   if len(args) < 1 {
     return shim.Error("The number of arguments is insufficient.")
   }
 
-  // Handle different functions
-  if function == "initCommitment" {
-    return t.initCommitment(stub, args)
-  } else if function == "getCommitment" {
-    return t.getCommitment(stub, args)
+  // ==== Handle different functions ====
+  if function == "initSpec" {
+    return t.initSpec(stub, args)
+  } else if function == "getSpec" {
+    return t.getSpec(stub, args)
   } else if function == "initCommitmentData" {
     return t.initCommitmentData(stub, args)
   } else if function == "richQuery" {
     return t.richQuery(stub, args)
   }
 
-  // If the arguments given don’t match any function, we return an error
+  // ==== If the arguments given don’t match any function, we return an error ====
   return shim.Error("Unknown action, check the first argument")
 }
 
-// =====================================================================
-// initCommitment - create a new commitment, store into chaincode state
-// =====================================================================
-func (t *SCC300NetworkChaincode) initCommitment(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+// =======================================================================
+//
+// initSpec - create a new spec, store into chaincode state.
+// The argument list consists of the spec name and the spec source code.
+//
+// =======================================================================
+func (t *SCC300NetworkChaincode) initSpec(stub shim.ChaincodeStubInterface, args []string) pb.Response {
   var err error
 
-  //   0                1                      2                                     3
-  // "SellItem", "HarryBaines", "If a SellItem is blah blah blah...", "commitment SellItem dID to cID..."
-  if len(args) != 4 {
-    return shim.Error("Incorrect number of arguments. Expecting 4")
+  if len(args) != 2 {
+    return shim.Error("Incorrect number of arguments. Expecting [<spec_name>, <spec_source>]")
   }
 
   // ==== Input sanitation ====
-  fmt.Println("- start init commitment")
+  fmt.Println("- start init spec")
   if len(args[0]) <= 0 {
     return shim.Error("1st argument must be a non-empty string")
   }
   if len(args[1]) <= 0 {
     return shim.Error("2nd argument must be a non-empty string")
   }
-  if len(args[2]) <= 0 {
-    return shim.Error("3rd argument must be a non-empty string")
-  }
-  if len(args[3]) <= 0 {
-    return shim.Error("4th argument must be a non-empty string")
-  }
 
-  commitmentName := args[0]
-  owner := args[1]
-  datecreated := args[2]
-  source := args[3]
+  specName := args[0]
+  source := args[1]
 
-  // ==== Check if commitment already exists ====
-  commitmentAsBytes, err := stub.GetState(commitmentName)
+  // ==== Check if spec already exists ====
+  specAsBytes, err := stub.GetState(specName)
   if err != nil {
-    return shim.Error("Failed to get commitment: " + err.Error())
-  } else if commitmentAsBytes != nil {
-    fmt.Println("This commitment already exists: " + commitmentName)
-    return shim.Error("This commitment already exists: " + commitmentName)
+    return shim.Error("Failed to get spec: " + err.Error())
+  } else if specAsBytes != nil {
+    fmt.Println("This spec already exists: " + specName)
+    return shim.Error("This spec already exists: " + specName)
   }
 
-  // ==== Create commitment object and marshal to JSON ====
-  objectType := "commitment"
-  commitment := &Commitment{objectType, commitmentName, owner, datecreated, source}
-  commitmentJSONasBytes, err := json.Marshal(commitment)
+  // ==== Create spec object and marshal to JSON ====
+  objectType := "spec"
+  spec := &Spec{objectType, specName, source}
+  specJSONasBytes, err := json.Marshal(spec)
   if err != nil {
     return shim.Error(err.Error())
   }
 
-  // === Save commitment to state ===
-  err = stub.PutState(commitmentName, commitmentJSONasBytes)
+  // ==== Save spec to state ====
+  err = stub.PutState(specName, specJSONasBytes)
   if err != nil {
     return shim.Error(err.Error())
   }
 
-  //  ==== Index the commitment to enable color-based range queries, e.g. return all blue commitments ====
-  //  An 'index' is a normal key/value entry in state.
-  //  The key is a composite key, with the elements that you want to range query on listed first.
-  //  In our case, the composite key is based on indexName~owner~name.
-  //  This will enable very efficient state range queries based on composite keys matching indexName~color~*
-  indexName := "owner~name"
-  ownerNameIndexKey, err := stub.CreateCompositeKey(indexName, []string{commitment.Owner, commitment.Name})
+  //  ==== Index the spec to enable range-based queries, e.g. return all SellItem commitments ====
+  // indexName := "owner~name"
+  indexName := "name"
+  ownerNameIndexKey, err := stub.CreateCompositeKey(indexName, []string{spec.Name})
   if err != nil {
     return shim.Error(err.Error())
   }
 
-  //  Save index entry to state. Only the key name is needed, no need to store a duplicate copy of the commitment.
-  //  Note - passing a 'nil' value will effectively delete the key from state, therefore we pass null character as value
+  //  ==== Save index entry to state. Only the key name is needed, no need to store a duplicate copy of the commitment. ====
+  //  ==== Note - passing a 'nil' value will effectively delete the key from state, therefore we pass null character as value. ====
   value := []byte{0x00}
   stub.PutState(ownerNameIndexKey, value)
 
-  // ==== Commitment saved and indexed. Return success ====
-  fmt.Println("- end init commitment")
+  // ==== Spec saved and indexed. Return success ====
+  fmt.Println("- end init spec")
 
-  // Notify listeners that an event "eventInvoke" have been executed (check line 24 in the file invoke.go)
+  // ==== Notify listeners that an event "eventInvoke" have been executed (see invoke.go) ====
   err = stub.SetEvent("eventInvoke", []byte{})
   if err != nil {
     return shim.Error(err.Error())
@@ -152,8 +140,42 @@ func (t *SCC300NetworkChaincode) initCommitment(stub shim.ChaincodeStubInterface
   return shim.Success(nil)
 }
 
+// ========================================================
+// getSpec - read a specification from chaincode state.
+// ========================================================
+func (t *SCC300NetworkChaincode) getSpec(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+  var name, jsonResp string
+  var err error
+
+  if len(args) != 1 {
+    return shim.Error("Incorrect number of arguments. Expecting name of the spec to query")
+  }
+
+  // ==== Get the spec from chaincode state ====
+  name = args[0]
+  valAsbytes, err := stub.GetState(name)
+  if err != nil {
+    jsonResp = "{\"Error\":\"Failed to get state for " + name + "\"}"
+    return shim.Error(jsonResp)
+  } else if valAsbytes == nil {
+    jsonResp = "{\"Error\":\"Spec does not exist: " + name + "\"}"
+    return shim.Error(jsonResp)
+  }
+
+  // ==== Notify listeners that an event "eventInvoke" have been executed (check line 19 in the file invoke.go) ====
+  err = stub.SetEvent("eventInvoke", []byte{})
+  if err != nil {
+    return shim.Error(err.Error())
+  }
+
+  return shim.Success(valAsbytes)
+}
+
 // ======================================================================
-// initCommitmentData - adds commitment data to blockchain to be queried
+//
+// initCommitmentData - adds commitment data to blockchain to be queried.
+// Accepts an array of JSON object strings and adds to CouchDB.
+//
 // ======================================================================
 func (t *SCC300NetworkChaincode) initCommitmentData(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 
@@ -175,10 +197,6 @@ func (t *SCC300NetworkChaincode) initCommitmentData(stub shim.ChaincodeStubInter
     }
 
     //  ==== Index the commitment to enable event name-based range queries ====
-    //  An 'index' is a normal key/value entry in state.
-    //  The key is a composite key, with the elements that you want to range query on listed first.
-    //  In our case, the composite key is based on indexName~name.
-    //  This will enable very efficient state range queries based on composite keys matching indexName~eventName~*
     indexName := "event"
     ownerNameIndexKey, err := stub.CreateCompositeKey(indexName, []string{eventName})
     if err != nil {
@@ -203,52 +221,24 @@ func (t *SCC300NetworkChaincode) initCommitmentData(stub shim.ChaincodeStubInter
   return shim.Success(nil)
 }
 
-// ========================================================
-// getCommitment - read a commitment from chaincode state
-// ========================================================
-func (t *SCC300NetworkChaincode) getCommitment(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-  var name, jsonResp string
-  var err error
-
-  if len(args) != 1 {
-    return shim.Error("Incorrect number of arguments. Expecting name of the commitment to query")
-  }
-
-  // Get the commitment from chaincode state
-  name = args[0]
-  valAsbytes, err := stub.GetState(name)
-  if err != nil {
-    jsonResp = "{\"Error\":\"Failed to get state for " + name + "\"}"
-    return shim.Error(jsonResp)
-  } else if valAsbytes == nil {
-    jsonResp = "{\"Error\":\"Commitment does not exist: " + name + "\"}"
-    return shim.Error(jsonResp)
-  }
-
-  // Notify listeners that an event "eventInvoke" have been executed (check line 19 in the file invoke.go)
-  err = stub.SetEvent("eventInvoke", []byte{})
-  if err != nil {
-    return shim.Error(err.Error())
-  }
-
-  return shim.Success(valAsbytes)
-}
-
-// ===== Example: Ad hoc rich query ========================================================
-// richQuery uses a query string to perform a query for commitments.
+// =========================================================================================
+//
+// richQuery - uses a query string to perform a query for commitments.
+//
 // Query string matching state database syntax is passed in and executed as is.
 // Supports ad hoc queries that can be defined at runtime by the client.
-// If this is not desired, follow the queryMarblesForOwner example for parameterized queries.
-// Only available on state databases that support rich query (e.g. CouchDB)
+// Only available on state databases that support rich query (e.g. CouchDB).
+// The first argument in the args list is the query string.
+//
 // =========================================================================================
 func (t *SCC300NetworkChaincode) richQuery(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 
-  //      0
-  // "queryString"
+  // ==== Input sanitation =====
   if len(args) < 1 {
     return shim.Error("Incorrect number of arguments. Expecting 1")
   }
 
+  // ==== Obtain query results ====
   queryString := args[0]
   queryResults, err := getQueryResultForQueryString(stub, queryString)
   if err != nil {
@@ -258,35 +248,38 @@ func (t *SCC300NetworkChaincode) richQuery(stub shim.ChaincodeStubInterface, arg
 }
 
 // =========================================================================================
-// getQueryResultForQueryString executes the passed in query string.
+//
+// getQueryResultForQueryString - executes the passed in query string.
 // Result set is built and returned as a byte array containing the JSON results.
+//
 // =========================================================================================
 func getQueryResultForQueryString(stub shim.ChaincodeStubInterface, queryString string) ([]byte, error) {
 
-  fmt.Printf("- getQueryResultForQueryString queryString:\n%s\n", queryString)
-
+  // ==== Obtain query result ====
   resultsIterator, err := stub.GetQueryResult(queryString)
   if err != nil {
     return nil, err
   }
   defer resultsIterator.Close()
 
+  // ==== Construct query response ====
   buffer, err := constructQueryResponseFromIterator(resultsIterator)
   if err != nil {
     return nil, err
   }
 
-  fmt.Printf("- getQueryResultForQueryString queryResult:\n%s\n", buffer.String())
-
   return buffer.Bytes(), nil
 }
 
 // ===========================================================================================
-// constructQueryResponseFromIterator constructs a JSON array containing query results from
-// a given result iterator
+//
+// constructQueryResponseFromIterator - constructs a JSON array containing query results from
+// a given result iterator.
+//
 // ===========================================================================================
 func constructQueryResponseFromIterator(resultsIterator shim.StateQueryIteratorInterface) (*bytes.Buffer, error) {
-  // buffer is a JSON array containing QueryResults
+
+  // ==== Buffer is a JSON array containing QueryResults ====
   var buffer bytes.Buffer
   buffer.WriteString("[")
 
@@ -296,7 +289,7 @@ func constructQueryResponseFromIterator(resultsIterator shim.StateQueryIteratorI
     if err != nil {
       return nil, err
     }
-    // Add a comma before array members, suppress it for the first array member
+    // ==== Add a comma before array members, suppress it for the first array member ====
     if bArrayMemberAlreadyWritten == true {
       buffer.WriteString(",")
     }
@@ -306,7 +299,7 @@ func constructQueryResponseFromIterator(resultsIterator shim.StateQueryIteratorI
     buffer.WriteString("\"")
 
     buffer.WriteString(", \"Record\":")
-    // Record is a JSON object, so we write as-is
+    // ==== Record is a JSON object, so we write as-is ====
     buffer.WriteString(string(queryResponse.Value))
     buffer.WriteString("}")
     bArrayMemberAlreadyWritten = true
@@ -316,8 +309,10 @@ func constructQueryResponseFromIterator(resultsIterator shim.StateQueryIteratorI
   return &buffer, nil
 }
 
+// ==================================================================
+// main - start the chaincode and make it ready for future requests.
+// ==================================================================
 func main() {
-  // Start the chaincode and make it ready for futures requests
   err := shim.Start(new(SCC300NetworkChaincode))
   if err != nil {
     fmt.Printf("Error starting SCC300Network chaincode: %s", err)

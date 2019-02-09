@@ -85,10 +85,6 @@ func GetCreatedCommitments(comName string, fab *blockchain.FabricSetup) (commitm
 	return nil, com, fmt.Errorf("Couldn't get %s created commitments", comName)
 }
 
-// func getRecordsByComID(comID string, ) (records []map[string]interface{}) {
-//
-// }
-
 // =========================== GET DETACHED COMMITMENTS ==================================
 //
 //  Obtains all detached commitments based on a given commitment/spec name.
@@ -295,7 +291,7 @@ func isDateWithinDeadline(createdDateStr string, detachedDateStr string, deadlin
 func getCommitmentDetails(comName string, fab *blockchain.FabricSetup) (res CommitmentMeta, spec *p.Spec) {
 
 	// Obtain commitment from CouchDB based on the comName
-	response, _ := fab.QueryCommitment(comName)
+	response, _ := fab.GetSpec(comName)
 
 	// Unmarshal JSON into structure and obtain source code
 	com := CommitmentMeta{}
@@ -306,3 +302,7 @@ func getCommitmentDetails(comName string, fab *blockchain.FabricSetup) (res Comm
 
 	return com, spec;
 }
+
+// func getRecordsByComID(comID string, ) (records []map[string]interface{}) {
+//
+// }

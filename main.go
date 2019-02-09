@@ -16,9 +16,7 @@ import (
 
 const (
   JSONDataFile = "./specs/test_data.json"
-  TICK = '\u2713'
-  GREEN = "\033[92m"
-  ENDC = "\033[0m"
+  GreenTick = "\033[92m" + "\u2713" + "\033[0m"
 )
 
 func main() {
@@ -61,7 +59,7 @@ func main() {
 
   // Commitment initialisation - Get spec source from file and initialise
   specArgs := compileSpec("./specs/SellItem.quark")
-  _, err = fSetup.InvokeInitCommitment(specArgs)
+  _, err = fSetup.InvokeInitSpec(specArgs)
   if err != nil {
     log.Fatalf("Unable to initialise commitment on the chaincode: %v\n", err)
   }
@@ -92,36 +90,30 @@ func compileSpec(filepath string) ([]string) {
   if (err != nil) {
     log.Fatal("\nSyntax Error:\n", err, "\n")
   } else {
-    fmt.Printf("\n%s spec compiled successfully %s%c%s \n\n", spec.Constraint.Name, GREEN, TICK, ENDC)
+    fmt.Printf("\n%s spec compiled successfully %s \n\n", spec.Constraint.Name, GreenTick)
   }
 
-  // Create list of args to initialise a new commitment
-  specArgs := []string{
-    spec.Constraint.Name,
-    "Harry Baines",
-    "22/11/18",
-    source,
-  }
-
+  // Create list of args to initialise a new spec
+  specArgs := []string{spec.Constraint.Name, source}
   return specArgs
 }
- 
+
 func getJSONObjectStrsFromFile(filepath string) (strs []string) {
   data, err := ioutil.ReadFile(filepath)
   if (err != nil) {
     log.Fatalf("Couldn't read JSON file %s", filepath)
   }
-  
-  // Parse the JSON
+
+  // Parse the JSON - or use json.Decoder.Decode(...)
   var objs interface{}
-  json.Unmarshal([]byte(string(data)), &objs) // Or use json.Decoder.Decode(...)
+  json.Unmarshal([]byte(string(data)), &objs)
 
   // Ensure that it is an array of objects.
   objArr, ok := objs.([]interface{})
   if !ok {
     log.Fatal("expected an array of objects")
   }
-  
+
   // Handle each object as a map[string]interface{}
   jsonStrs := make([]string, 0)
   for i, obj := range objArr {

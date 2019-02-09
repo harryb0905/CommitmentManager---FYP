@@ -13,14 +13,14 @@ type Spec struct {
   DischargeEvent *Event
 }
 
-// A constraint details who is involved in the specification and the spec name
+// A constraint consists of the spec name and who is involved (debtor + creditor)
 type Constraint struct {
   Name      string
   Debter    string
   Creditor  string
 }
 
-// An event (such as Offer, Pay)
+// An event (such as Offer, Pay) + argument list
 type Event struct {
   Name  string
   Args  []Arg
@@ -210,4 +210,6 @@ func (p *Parser) scanIgnoreWhitespace() (tok Token, lit string) {
 }
 
 // unscan pushes the previously read token back onto the buffer.
-func (p *Parser) unscan() { p.buf.n = 1 }
+func (p *Parser) unscan() {
+  p.buf.n = 1
+}
