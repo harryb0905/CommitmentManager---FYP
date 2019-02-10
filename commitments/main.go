@@ -125,14 +125,17 @@ func GetDetachedCommitments(comName string, wantExpired bool, fab *blockchain.Fa
 
 		// Create commitments from responses with data per commitment state
 		commitments = []Commitment{}
+	 	hasDetachedEvent := false
 
 		// 4. Date checks with deadlines on detached results
-		for _, comRes := range responses {
+		for _, createdCom := range createdComs {
 
 			// 5. If Pay record exists and that timestamp is within a period of 5 days or less from offer being created, this commitment is detached.
-			for _, createdCom := range createdComs {
+			for _, comRes := range responses {
+
 				// Get created commitment that corresponds to this detached commitment
 				if (createdCom.ComID == comRes.Record["comID"].(string)) {
+					hasDetachedEvent = true
 					// Extract date for checking deadline
 					createdDateStr := createdCom.States[0].Data["date"].(string)
 					detachedDateStr := comRes.Record["date"].(string)
@@ -142,7 +145,7 @@ func GetDetachedCommitments(comName string, wantExpired bool, fab *blockchain.Fa
 					if ((withinDeadline && !wantExpired) || (!withinDeadline && wantExpired)) {
 						commitments = append(commitments,
 							Commitment{
-								ComID: comRes.Record["comID"].(string),
+								ComID: createdCom.ComID,
 								States: []ComState {
 									ComState{
 										Name: "Created",
@@ -157,8 +160,40 @@ func GetDetachedCommitments(comName string, wantExpired bool, fab *blockchain.Fa
 							},
 						)
 					}
+					break
 				}
 			}
+
+			// Edge case where Offer exists but Pay doesn't
+			// Use todays date to determine if it should be detached
+			if (!hasDetachedEvent) {
+				// Extract dates for checking deadline
+				createdDateStr := createdCom.States[0].Data["date"].(string)
+				todayStr := time.Now().String()
+
+				// If detached event date is within specified deadline, include in results
+				withinDeadline := isDateWithinDeadline(createdDateStr, todayStr, deadline)
+				if (!withinDeadline && wantExpired) {
+					commitments = append(commitments,
+						Commitment{
+							ComID: createdCom.ComID,
+							States: []ComState {
+								ComState{
+									Name: "Created",
+									Data: createdCom.States[0].Data,
+								},
+								ComState{
+									Name: "Detached",
+									Data: nil,
+								},
+								ComState{Name: "Discharged", Data: nil,},
+							},
+						},
+					)
+				}
+			}
+
+			hasDetachedEvent = false
 		}
 		return commitments, com, err;
 	}
