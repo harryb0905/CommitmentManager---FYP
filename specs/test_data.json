@@ -30,10 +30,18 @@
     "date": "Thu Dec 20 23:00:00 2018"
   },
   {
+    "docType": "Offer",
+    "comID": "d0f2116d-6236-93d4-864c-08e5128e8036",
+    "debtor": "Amit",
+    "creditor": "Eric",
+    "item": "Pen",
+    "price": "1.99",
+    "quality": "Great",
+    "date": "Wed Dec 19 12:00:00 2018"
+  },
+  {
     "docType": "Pay",
     "comID": "48c304fd-bff3-4054-8e44-26994fb4ff73",
-    "debtor": "Harry",
-    "creditor": "John",
     "amount": "10.99",
     "address": "49 Garstang Road West",
     "shippingtype": "Express Delivery",
@@ -42,8 +50,6 @@
   {
     "docType": "Pay",
     "comID": "23fa61a0-6b32-4e38-93d4-08e5128e8036",
-    "debtor": "Yash",
-    "creditor": "Georgi",
     "amount": "29.99",
     "address": "87 Hardhorn Road",
     "shippingtype": "Nominated Day Delivery",
@@ -52,8 +58,6 @@
   {
     "docType": "Pay",
     "comID": "c0e4116d-6236-41d9-864c-2f816ba4d75e",
-    "debtor": "Simon",
-    "creditor": "Joe",
     "amount": "9.99",
     "address": "20 The Road",
     "shippingtype": "Next Day Delivery",
@@ -62,8 +66,6 @@
   {
     "docType": "Delivery",
     "comID": "48c304fd-bff3-4054-8e44-26994fb4ff73",
-    "debtor": "Harry",
-    "creditor": "John",
     "date": "Mon Dec 24 20:00:00 2018"
   },
   {
