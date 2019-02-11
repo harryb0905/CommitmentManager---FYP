@@ -47,7 +47,17 @@
     "amount": "29.99",
     "address": "87 Hardhorn Road",
     "shippingtype": "Nominated Day Delivery",
-    "date": "Sun Feb 10 12:25:00 2019"
+    "date": "Sun Dec 23 12:25:00 2018"
+  },
+  {
+    "docType": "Pay",
+    "comID": "c0e4116d-6236-41d9-864c-2f816ba4d75e",
+    "debtor": "Simon",
+    "creditor": "Joe",
+    "amount": "9.99",
+    "address": "20 The Road",
+    "shippingtype": "Next Day Delivery",
+    "date": "Fri Dec 21 12:25:00 2018"
   },
   {
     "docType": "Delivery",
@@ -59,8 +69,6 @@
   {
     "docType": "Delivery",
     "comID": "23fa61a0-6b32-4e38-93d4-08e5128e8036",
-    "debtor": "Yash",
-    "creditor": "Georgi",
-    "date": "Mon Jan 24 20:00:00 2019"
+    "date": "Mon Dec 24 20:00:00 2018"
   }
 ]

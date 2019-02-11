@@ -219,7 +219,7 @@ func GetExpiredCommitments(comName string, fab *blockchain.FabricSetup) (commitm
 //  Obtains all discharged commitments based on a given commitment/spec name
 //
 // =========================================================================================
-func GetDischargedCommitments(comName string, wantExpired bool, fab *blockchain.FabricSetup) (commitments []Commitment, com CommitmentMeta, err error) {
+func GetDischargedCommitments(comName string, wantViolated bool, fab *blockchain.FabricSetup) (commitments []Commitment, com CommitmentMeta, err error) {
 	// 1. Check if this commitment has been created (can't be detached if not already created)
 	detachedComs, com, err := GetDetachedCommitments(comName, false, fab)
 
@@ -250,23 +250,24 @@ func GetDischargedCommitments(comName string, wantExpired bool, fab *blockchain.
 
 		// Create commitments from responses with data per commitment state
 		commitments = []Commitment{}
+		hasDischargedEvent := false
 
 		// 4. Date checks with deadlines on detached results
-		for _, comRes := range responses {
+		for _, detachedCom := range detachedComs {
 
 			// 5. If Pay record exists and that timestamp is within a period of 5 days or less from offer being created, this commitment is detached.
-			for _, detachedCom := range detachedComs {
+			for _, comRes := range responses {
 
 				// Get created commitment that corresponds to this detached commitment
 				if (detachedCom.ComID == comRes.Record["comID"].(string)) {
-
+					hasDischargedEvent = true
 					// Extract date for checking deadline
 					createdDateStr := detachedCom.States[0].Data["date"].(string)
 					dischargedDateStr := comRes.Record["date"].(string)
 
 					// If detached event date is within specified deadline, include in results
 					withinDeadline := isDateWithinDeadline(createdDateStr, dischargedDateStr, deadline)
-					if ((withinDeadline && !wantExpired) || (!withinDeadline && wantExpired)) {
+					if ((withinDeadline && !wantViolated) || (!withinDeadline && wantViolated)) {
 						commitments = append(commitments,
 							Commitment{
 								ComID: comRes.Record["comID"].(string),
@@ -287,8 +288,42 @@ func GetDischargedCommitments(comName string, wantExpired bool, fab *blockchain.
 							},
 						)
 					}
+					break
 				}
 			}
+
+			// Edge case where Pay exists but Delivery doesn't
+			// Use todays date to determine if it should be detached
+			if (!hasDischargedEvent) {
+				// Extract dates for checking deadline
+				detachedDateStr := detachedCom.States[1].Data["date"].(string)
+				todayStr := time.Now().String()
+
+				// If detached event date is within specified deadline, include in results
+				withinDeadline := isDateWithinDeadline(detachedDateStr, todayStr, deadline)
+				if (!withinDeadline && wantViolated) {
+					commitments = append(commitments,
+						Commitment{
+							ComID: detachedCom.ComID,
+							States: []ComState {
+								ComState{
+									Name: "Created",
+									Data: detachedCom.States[0].Data,
+								},
+								ComState{
+									Name: "Detached",
+									Data: detachedCom.States[1].Data,
+								},
+								ComState{
+									Name: "Discharged",
+									Data: nil,
+								},
+							},
+						},
+					)
+				}
+			}
+			hasDischargedEvent = false
 		}
 		return commitments, com, err;
 	}
