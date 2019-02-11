@@ -1,26 +1,30 @@
 {{define "title"}}Home{{end}}
 
 {{define "body"}}
-<div class="uk-container">
-  <h2 class="uk-heading-divider">Commitment Manager</h2>
-  <form class="form" action="home.html" method="post">
-    <div class="form-group">
-      <label class="uk-form-label">Specification Name</label>
-      <input class="uk-input" type="text" name="comname" placeholder="Search...">
-      <label class="uk-form-label">Query</label>
-      <select class="uk-select" id="stateFormControl" name="commitmentState">
-        <option value="created">Created</option>
-        <option value="detached">Detached</option>
-        <option value="expired">Expired</option>
-        <option value="discharged">Discharged</option>
-        <option value="violated">Violated</option>
-      </select>
-    </div>
-    <input type="hidden" name="submitted" value="true">
-    <p uk-margin>
-      <button class="uk-button uk-button-primary" type="submit">Search</button>
-    </p>
-  </form>
+  <div>
+    <form class="form" action="home.html" method="post">
+      <div class="ui text container">
+        <h3 class="first">Search Commitments</h3>
+        <div class="form-group">
+          <label class="uk-form-label">Specification Name</label>
+          <input class="uk-input" type="text" name="comname" placeholder="Search...">
+          <label class="uk-form-label">Query</label>
+          <select class="ui dropdown" id="stateFormControl" name="commitmentState">
+            <option value="created">Created</option>
+            <option value="detached">Detached</option>
+            <option value="expired">Expired</option>
+            <option value="discharged">Discharged</option>
+            <option value="violated">Violated</option>
+          </select>
+        </div>
+        <input type="hidden" name="submitted" value="true">
+        <p uk-margin>
+          <button class="ui primary button" type="submit">Search</button>
+        </p>
+      </div>
+    </form>
+  </div>
+
 
   {{ $specName := .SpecName }}
   {{ $state := .ComState }}
@@ -32,74 +36,76 @@
         <pre>{{ .SpecSource }}</pre>
         <hr />
       </div>
-      <div class="uk-margin-large-bottom uk-card uk-card-default uk-card-body">
-        <p class="uk-card-title">{{ .NumComs }} {{ .ComState }} {{ .SpecName }} commitment(s) found:</p>
-        <table class="uk-table uk-table-hover uk-table-divider uk-table-striped">
-          <thead>
-            <tr>
-              <th>Commitment ID</th>
-              <th>Debtor</th>
-              <th>Creditor</th>
-              <th>Creation Date</th>
-              <th>State</th>
-            </tr>
-          </thead>
-          <tbody>
-            {{ range $key, $value := .Coms }}
-              {{ $createdData := (index $value.States 0).Data }}
-              <tr uk-toggle="target: #{{ $createdData.debtor }}">
-                <td>{{ $createdData.comID }}</td>
-                <td>{{ $createdData.debtor }}</td>
-                <td>{{ $createdData.creditor }}</td>
-                <td>{{ $createdData.date }}</td>
-                <td>
-                  {{ if or (eq $state "Expired") (eq $state "Violated") }}
-                    <span class="uk-label uk-label-danger">{{ $state }}</span>
-                  {{ else }}
-                    <span class="uk-label uk-label-success">{{ $state }}</span>
-                  {{ end }}
-                </td>
+      <div class="ui two column centered grid">
+        <div class="column">
+          <p class="uk-card-title">{{ .NumComs }} {{ .ComState }} {{ .SpecName }} commitment(s) found:</p>
+          <table class="ui striped table">
+            <thead>
+              <tr>
+                <th>Commitment ID</th>
+                <th>Debtor</th>
+                <th>Creditor</th>
+                <th>Creation Date</th>
+                <th>State</th>
               </tr>
-              <!-- Modal content -->
-              <div id="{{ $createdData.debtor }}" uk-modal>
-                <div class="uk-modal-dialog">
-                  <button class="uk-modal-close-default" type="button" uk-close></button>
-                  <div class="uk-modal-header">
-                    <h2 class="uk-modal-title">Commitment Data</h2>
-                  </div>
-                  <div class="uk-modal-body">
-                    <div id="create-event-json">
-                      Create Event: <br /> { <br />
-                        {{ range $key, $item :=  $createdData }}
-                          &emsp; {{ $key }}: {{ $item }},<br />
-                        {{ end }}
-                      }
+            </thead>
+            <tbody>
+              {{ range $key, $value := .Coms }}
+                {{ $createdData := (index $value.States 0).Data }}
+                <tr uk-toggle="target: #{{ $createdData.debtor }}">
+                  <td>{{ $createdData.comID }}</td>
+                  <td>{{ $createdData.debtor }}</td>
+                  <td>{{ $createdData.creditor }}</td>
+                  <td>{{ $createdData.date }}</td>
+                  <td>
+                    {{ if or (eq $state "Expired") (eq $state "Violated") }}
+                      <span class="uk-label uk-label-danger">{{ $state }}</span>
+                    {{ else }}
+                      <span class="uk-label uk-label-success">{{ $state }}</span>
+                    {{ end }}
+                  </td>
+                </tr>
+                <!-- Modal content -->
+                <div id="{{ $createdData.debtor }}" uk-modal>
+                  <div class="uk-modal-dialog">
+                    <button class="uk-modal-close-default" type="button" uk-close></button>
+                    <div class="uk-modal-header">
+                      <h2 class="uk-modal-title">Commitment Data</h2>
                     </div>
-                    <div id="create-event-json">
-                      {{ $detachedData := (index $value.States 1).Data }}
-                      Detach Event: <br /> { <br />
-                        {{ range $key, $item :=  $detachedData }}
-                          &emsp; {{ $key }}: {{ $item }},<br />
-                        {{ end }}
-                      }
+                    <div class="uk-modal-body">
+                      <div id="create-event-json">
+                        Create Event: <br /> { <br />
+                          {{ range $key, $item :=  $createdData }}
+                            &emsp; {{ $key }}: {{ $item }},<br />
+                          {{ end }}
+                        }
+                      </div>
+                      <div id="create-event-json">
+                        {{ $detachedData := (index $value.States 1).Data }}
+                        Detach Event: <br /> { <br />
+                          {{ range $key, $item :=  $detachedData }}
+                            &emsp; {{ $key }}: {{ $item }},<br />
+                          {{ end }}
+                        }
+                      </div>
+                      <div id="create-event-json">
+                        {{ $dischargedData := (index $value.States 2).Data }}
+                        Discharge Event: <br /> { <br />
+                          {{ range $key, $item :=  $dischargedData }}
+                            &emsp; {{ $key }}: {{ $item }},<br />
+                          {{ end }}
+                        }
+                      </div>
                     </div>
-                    <div id="create-event-json">
-                      {{ $dischargedData := (index $value.States 2).Data }}
-                      Discharge Event: <br /> { <br />
-                        {{ range $key, $item :=  $dischargedData }}
-                          &emsp; {{ $key }}: {{ $item }},<br />
-                        {{ end }}
-                      }
+                    <div class="uk-modal-footer">
+                      <button class="uk-button uk-button-primary uk-modal-close" type="button">Close</button>
                     </div>
-                  </div>
-                  <div class="uk-modal-footer">
-                    <button class="uk-button uk-button-primary uk-modal-close" type="button">Close</button>
                   </div>
                 </div>
-              </div>
-            {{ end }}
-          </tbody>
-        </table>
+              {{ end }}
+            </tbody>
+          </table>
+        </div>
       </div>
     {{ else }}
       <p>Couldn't find any {{ .ComState }} `{{ $specName }}` commitments.</p>
