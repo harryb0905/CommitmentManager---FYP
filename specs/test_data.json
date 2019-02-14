@@ -66,11 +66,13 @@
   {
     "docType": "Delivery",
     "comID": "48c304fd-bff3-4054-8e44-26994fb4ff73",
+    "courier": "Parcel Force",
     "date": "Mon Dec 24 20:00:00 2018"
   },
   {
     "docType": "Delivery",
     "comID": "23fa61a0-6b32-4e38-93d4-08e5128e8036",
+    "courier": "DPD",
     "date": "Mon Dec 24 20:00:00 2018"
   }
 ]
