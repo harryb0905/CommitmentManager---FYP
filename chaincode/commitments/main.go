@@ -7,10 +7,10 @@ import (
 	"encoding/json"
   "math"
 
-	// "github.com/davecgh/go-spew/spew"
 	"github.com/scc300/scc300-network/blockchain"
 	q "github.com/scc300/scc300-network/quark"
   p "github.com/scc300/scc300-network/quark/parser"
+  // "github.com/davecgh/go-spew/spew"
 )
 
 const (
@@ -40,15 +40,17 @@ type CommitmentMeta struct {
 }
 
 // =========================== GET CREATED COMMITMENTS ===================================
-//
 //  Obtains all created commitments based on a given commitment/spec name.
 //  A commitment is created if it exists on the blockchain CouchDB database.
-//
 // =======================================================================================
-func GetCreatedCommitments(comName string, fab *blockchain.FabricSetup) (commitments []Commitment, com CommitmentMeta, err error) {
+func (fab *blockchain.FabricSetup) GetCreatedCommitments(comName string) (commitments []Commitment, com CommitmentMeta, err error) {
+  commitments = []Commitment{}
 
 	// Get all commitment details (inc. event names)
-  com, spec := getCommitmentDetails(comName, fab)
+  com, spec, er := getCommitmentDetails(comName, fab)
+  if (er != nil) {
+    return commitments, com, er
+  }
 	createEvent := spec.CreateEvent.Name
 
 	// Format query and perform query to get created commitment results
@@ -63,7 +65,6 @@ func GetCreatedCommitments(comName string, fab *blockchain.FabricSetup) (commitm
 		err = json.Unmarshal([]byte(response), &responses)
 
 		// Create commitments from responses with data per commitment state
-		commitments = []Commitment{}
 		for _, elem := range responses {
 			commitments = append(commitments,
 				Commitment{
@@ -86,12 +87,10 @@ func GetCreatedCommitments(comName string, fab *blockchain.FabricSetup) (commitm
 }
 
 // =========================== GET DETACHED COMMITMENTS ==================================
-//
 //  Obtains all detached commitments based on a given commitment/spec name.
 //  A commitment is detached if the created event exists on the blockchain CouchDB database
 //  and the detached event has occured within the specified deadline.
 //  If the commitment isn't detached and the deadline has exceeded, the commitment expires.
-//
 // =======================================================================================
 func GetDetachedCommitments(comName string, wantExpired bool, fab *blockchain.FabricSetup) (commitments []Commitment, com CommitmentMeta, err error) {
 
@@ -99,7 +98,7 @@ func GetDetachedCommitments(comName string, wantExpired bool, fab *blockchain.Fa
 	createdComs, com, err := GetCreatedCommitments(comName, fab)
 
 	// 3. If created, extract the deadline value from the spec source (e.g. deadline=5)
-	com, spec := getCommitmentDetails(comName, fab)
+	com, spec, _ := getCommitmentDetails(comName, fab)
 	detachEvent := spec.DetachEvent.Name
 	detachArgs := spec.DetachEvent.Args
 	// spew.Dump(spec)
@@ -202,9 +201,7 @@ func GetDetachedCommitments(comName string, wantExpired bool, fab *blockchain.Fa
 }
 
 // =========================== GET EXPIRED COMMITMENTS ===================================
-//
 //  Obtains all expired commitments based on a given commitment/spec name
-//
 // =======================================================================================
 func GetExpiredCommitments(comName string, fab *blockchain.FabricSetup) (commitments []Commitment, com CommitmentMeta, err error) {
 	expiredComs, com, err := GetDetachedCommitments(comName, true, fab)
@@ -215,16 +212,14 @@ func GetExpiredCommitments(comName string, fab *blockchain.FabricSetup) (commitm
 }
 
 // =========================== GET DISCHARGED COMMITMENTS ==================================
-//
 //  Obtains all discharged commitments based on a given commitment/spec name
-//
 // =========================================================================================
 func GetDischargedCommitments(comName string, wantViolated bool, fab *blockchain.FabricSetup) (commitments []Commitment, com CommitmentMeta, err error) {
 	// 1. Check if this commitment has been created (can't be detached if not already created)
 	detachedComs, com, err := GetDetachedCommitments(comName, false, fab)
 
 	// 3. If created, extract the deadline value from the spec source (e.g. deadline=5)
-	com, spec := getCommitmentDetails(comName, fab)
+	com, spec, _ := getCommitmentDetails(comName, fab)
 	dischargeEvent := spec.DischargeEvent.Name
 	dischargeArgs := spec.DischargeEvent.Args
 	// spew.Dump(spec)
@@ -332,9 +327,7 @@ func GetDischargedCommitments(comName string, wantViolated bool, fab *blockchain
 }
 
 // =========================== GET VIOLATED COMMITMENTS ====================================
-//
 //  Obtains all violated commitments based on a given commitment/spec name
-//
 // =========================================================================================
 func GetViolatedCommitments(comName string, fab *blockchain.FabricSetup) (commitments []Commitment, com CommitmentMeta, err error) {
 	violatedComs, com, err := GetDischargedCommitments(comName, true, fab)
@@ -357,22 +350,20 @@ func isDateWithinDeadline(createdDateStr string, detachedDateStr string, deadlin
 	}
 }
 
-// Obtains the events for a given commitment (e.g. Offer, Pay, Delivery)
-func getCommitmentDetails(comName string, fab *blockchain.FabricSetup) (res CommitmentMeta, spec *p.Spec) {
+// Obtains the commitment spec details from CouchDB
+func getCommitmentDetails(comName string, fab *blockchain.FabricSetup) (res CommitmentMeta, spec *p.Spec, err error) {
 
-	// Obtain commitment from CouchDB based on the comName
-	response, _ := fab.GetSpec(comName)
+  // Obtain spec from CouchDB based on the comName
+  com := CommitmentMeta{}
+	response, er := fab.GetSpec(comName)
+  if (er != nil) {
+    return com, nil, er
+  }
 
 	// Unmarshal JSON into structure and obtain source code
-	com := CommitmentMeta{}
 	json.Unmarshal([]byte(response), &com)
 
 	// Compile specification (using custom built compiler) to obtain events
 	spec, _ = q.Parse(com.Source)
-
-	return com, spec;
+	return com, spec, nil;
 }
-
-// func getRecordsByComID(comID string, ) (records []map[string]interface{}) {
-//
-// }

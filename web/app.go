@@ -3,7 +3,6 @@ package web
 import (
 	"fmt"
 	"net/http"
-
 	"github.com/scc300/scc300-network/web/controllers"
 )
 

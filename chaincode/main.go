@@ -2,11 +2,12 @@ package main
 
 import (
   "fmt"
-  "github.com/hyperledger/fabric/core/chaincode/shim"
-  pb "github.com/hyperledger/fabric/protos/peer"
-
   "encoding/json"
   "bytes"
+
+  "github.com/hyperledger/fabric/core/chaincode/shim"
+  pb "github.com/hyperledger/fabric/protos/peer"
+  c "github.com/scc300/scc300-network/chaincode/commitments"
 )
 
 // SCC300NetworkChaincode implementation of Chaincode
@@ -20,10 +21,8 @@ type Spec struct {
 }
 
 // ============================================================
-//
 // Init - This function is called only one when the chaincode is instantiated.
 // Goal is to prepare the ledger to handle future requests.
-//
 // ============================================================
 func (t *SCC300NetworkChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 
@@ -57,6 +56,8 @@ func (t *SCC300NetworkChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Res
     return t.initSpec(stub, args)
   } else if function == "getSpec" {
     return t.getSpec(stub, args)
+  } else if function == "getCreatedCommitments" {
+    return t.getCreatedCommitments(stub, args)
   } else if function == "initCommitmentData" {
     return t.initCommitmentData(stub, args)
   } else if function == "richQuery" {
@@ -68,10 +69,8 @@ func (t *SCC300NetworkChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Res
 }
 
 // =======================================================================
-//
 // initSpec - create a new spec, store into chaincode state.
 // The argument list consists of the spec name and the spec source code.
-//
 // =======================================================================
 func (t *SCC300NetworkChaincode) initSpec(stub shim.ChaincodeStubInterface, args []string) pb.Response {
   var err error
@@ -171,11 +170,16 @@ func (t *SCC300NetworkChaincode) getSpec(stub shim.ChaincodeStubInterface, args 
   return shim.Success(valAsbytes)
 }
 
+func (t *SCC300NetworkChaincode) getCreatedCommitments(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+  comName := args[0]
+  commitments, com, err := c.GetCreatedCommitments(comName)
+  fmt.Println("GET CREATED COMMITMENTS", commitments)
+  return shim.Success(nil)
+}
+
 // ======================================================================
-//
 // initCommitmentData - adds commitment data to blockchain to be queried.
 // Accepts an array of JSON object strings and adds to CouchDB.
-//
 // ======================================================================
 func (t *SCC300NetworkChaincode) initCommitmentData(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 
@@ -222,14 +226,12 @@ func (t *SCC300NetworkChaincode) initCommitmentData(stub shim.ChaincodeStubInter
 }
 
 // =========================================================================================
-//
 // richQuery - uses a query string to perform a query for commitments.
 //
 // Query string matching state database syntax is passed in and executed as is.
 // Supports ad hoc queries that can be defined at runtime by the client.
 // Only available on state databases that support rich query (e.g. CouchDB).
 // The first argument in the args list is the query string.
-//
 // =========================================================================================
 func (t *SCC300NetworkChaincode) richQuery(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 
@@ -248,10 +250,8 @@ func (t *SCC300NetworkChaincode) richQuery(stub shim.ChaincodeStubInterface, arg
 }
 
 // =========================================================================================
-//
 // getQueryResultForQueryString - executes the passed in query string.
 // Result set is built and returned as a byte array containing the JSON results.
-//
 // =========================================================================================
 func getQueryResultForQueryString(stub shim.ChaincodeStubInterface, queryString string) ([]byte, error) {
 
@@ -272,10 +272,8 @@ func getQueryResultForQueryString(stub shim.ChaincodeStubInterface, queryString 
 }
 
 // ===========================================================================================
-//
 // constructQueryResponseFromIterator - constructs a JSON array containing query results from
 // a given result iterator.
-//
 // ===========================================================================================
 func constructQueryResponseFromIterator(resultsIterator shim.StateQueryIteratorInterface) (*bytes.Buffer, error) {
 
