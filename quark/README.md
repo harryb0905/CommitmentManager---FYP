@@ -3,9 +3,8 @@ This repository contains the source code for the quark contract language.
 
 ## Introduction
 
-Quark is a simple, declarative programming language allowing developers to easily define contracts.
-
-Quark uses specifications to define conditions in contracts.
+Quark is a simple, declarative programming language allowing merchants to easily define contracts.
+Quark uses specifications to define contract conditions.
 
 For example, an offer can be created whereby an item is offered by you to another person. 
 You can define the price, the quality and any other parameters, such as the deadline before which a payment should be made.
@@ -14,6 +13,7 @@ Payment and delivery criteria can also be defined.
 ## Methodology
 
 A commitment refers to an instance of a specification. 
+A specification can have multiple commitment instances.
 
 <p align="center">
   <img src="./images/ExampleSTD.png" alt="ExampleSTD" width="500"/>
@@ -26,8 +26,8 @@ A contract specification can be defined as follows;
 ```
 spec SPEC_NAME DEBTOR to CREDITOR
   create EVENT [ARG_LIST]
-  detach EVENT [ARG_LIST, deadline=X]
-  discharge EVENT [ARG_LIST, deadline=Y]
+  detach EVENT [ARG_LIST] deadline=X
+  discharge EVENT [ARG_LIST] deadline=Y
 ```
 
 ```
@@ -50,14 +50,14 @@ spec SPEC_NAME DEBTOR to CREDITOR
 | --------- | -------------------------------------------------- | ------------------------------------------ |
 ```
 
-> **Note:** Every contract specification **MUST** include a deadline value in the detach and discharge event argument lists.
+> **Note:** Every contract specification **MUST** include a deadline value outside the detach and discharge event argument lists.
 
 An example 'SellItem' specification is defined below:
 ```
 spec SellItem dID to cID
   create Offer [item,price,quality]
-  detach Pay [amount,address,shippingtype,deadline=5]
-  discharge Delivery [deadline=5]
+  detach Pay [amount,address,shippingtype] deadline=5
+  discharge Delivery [courier] deadline=10
 ```
 
 

@@ -22,14 +22,14 @@ type Constraint struct {
 
 // An event (such as Offer, Pay) + argument list
 type Event struct {
-  Name  string
-  Args  []Arg
+  Name      string
+  Args      []Arg
 }
 
 // Data field inside the event paramater list
 type Arg struct {
-  Name  string
-  Value string
+  Name   string
+  Value  string
 }
 
 // Parser represents a parser.
@@ -91,19 +91,25 @@ func (p *Parser) Parse() (*Spec, error) {
     return nil, err
   }
 
-  // Obtain 'detach' statement + args
+  // Obtain 'detach' statement + args + deadline
   com.DetachEvent = &Event{}
   if err := NewEvent(DETACH, com.DetachEvent, p); err != nil {
     return nil, err
   }
+  if err := GetDeadline(com.DetachEvent, p); err != nil {
+    return nil, err
+  }
 
-  // Obtain 'discharge' statement + args
+  // Obtain 'discharge' statement + args + deadline
   com.DischargeEvent = &Event{}
   if err := NewEvent(DISCHARGE, com.DischargeEvent, p); err != nil {
     return nil, err
   }
+  if err := GetDeadline(com.DischargeEvent, p); err != nil {
+    return nil, err
+  }
 
-  // Return the successfully parsed statement.
+  // Return the successfully parsed statement
   return com, nil
 }
 
@@ -117,7 +123,7 @@ func NewEvent(evname Token, event *Event, p *Parser) (error) {
       return fmt.Errorf("found %q, expected event name for '%s'", lit_ev, evname)
     }
   } else {
-    return fmt.Errorf("found %q, expected '%s'", lit, evname)
+    return fmt.Errorf("found %q, expected EVENT", lit)
   }
   // Get arguments (optional) for event fields
   if err := GetArgs(event, p); err != nil {
@@ -132,34 +138,16 @@ func GetArgs(event *Event, p *Parser) (error) {
   if tok, lit := p.scanIgnoreWhitespace(); tok != LBRACKET {
     return fmt.Errorf("found %q, expected '['", lit)
   }
-  // Next we should loop over all our comma-delimited fields for this event
+  // Loop over all our comma-delimited fields for this event
   for {
-    // Read a field.
+    // Read a field + add arg name
     tok, lit := p.scanIgnoreWhitespace()
     if tok != IDENT {
       return fmt.Errorf("found %q, expected field", lit)
     }
-
-    // Detect possible value associated with arg
-    tok_eq, _ := p.scanIgnoreWhitespace()
-    if tok_eq == EQUALS {
-      tok_val, lit_val := p.scanIgnoreWhitespace()
-      if tok_val == IDENT {
-        // Add arg name with associated arg value
-        event.AddArg(Arg{
-          Name: lit,
-          Value: lit_val,
-        })
-      } else {
-        return fmt.Errorf("found %q, expected value for %q when using '='", lit_val, lit)
-      }
-    } else {
-      // Add just arg name (no given value)
-      event.AddArg(Arg{
-        Name: lit,
-      })
-      p.unscan()
-    }
+    event.AddArg(Arg{
+      Name: lit,
+    })
 
     // Detect close bracket
     if tok, _ := p.scanIgnoreWhitespace(); tok == RBRACKET {
@@ -168,10 +156,34 @@ func GetArgs(event *Event, p *Parser) (error) {
       p.unscan()
     }
 
+    // Detect another arg
     if tok, lit := p.scanIgnoreWhitespace(); tok == COMMA {
       continue
     } else {
       return fmt.Errorf("found %q, expected ',' or ']'", lit)
+    }
+  }
+  return nil
+}
+
+// Obtains the deadline value associated with the detach and discharge clauses
+func GetDeadline(event *Event, p *Parser) (error) {
+  tok, lit := p.scanIgnoreWhitespace()
+  if tok != IDENT {
+    return fmt.Errorf("found %q, expected field", lit)
+  }
+  // Detect possible value associated with arg
+  tok_eq, _ := p.scanIgnoreWhitespace()
+  if tok_eq == EQUALS {
+    tok_val, lit_val := p.scanIgnoreWhitespace()
+    if tok_val == IDENT {
+      // Add arg name with associated arg value
+      event.AddArg(Arg{
+        Name: lit,
+        Value: lit_val,
+      })
+    } else {
+      return fmt.Errorf("found %q, expected value for %q when using '='", lit_val, lit)
     }
   }
   return nil

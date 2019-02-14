@@ -104,7 +104,7 @@ func getJSONObjectStrsFromFile(filepath string) (strs []string) {
     log.Fatalf("Couldn't read JSON file %s", filepath)
   }
 
-  // Parse the JSON - or use json.Decoder.Decode(...)
+  // Parse the JSON
   var objs interface{}
   json.Unmarshal([]byte(string(data)), &objs)
 
