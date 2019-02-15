@@ -8,7 +8,6 @@ import (
   "reflect"
   "log"
 
-  q "github.com/scc300/scc300-network/quark"
 	"github.com/scc300/scc300-network/blockchain"
 	"github.com/scc300/scc300-network/web"
 	"github.com/scc300/scc300-network/web/controllers"
@@ -16,7 +15,6 @@ import (
 
 const (
   JSONDataFile = "./specs/test_data.json"
-  GreenTick = "\033[92m" + "\u2713" + "\033[0m"
 )
 
 func main() {
@@ -58,8 +56,8 @@ func main() {
 	}
 
   // Commitment initialisation - Get spec source from file and initialise
-  specArgs := compileSpec("./specs/SellItem.quark")
-  _, err = fSetup.InvokeInitSpec(specArgs)
+  specSource := getSpecSource("./specs/SellItem.quark")
+  _, err = fSetup.InvokeInitSpec(specSource)
   if err != nil {
     log.Fatalf("Unable to initialise commitment on the chaincode: %v\n", err)
   }
@@ -78,26 +76,18 @@ func main() {
 	web.Serve(app)
 }
 
-// Function to compile spec file and create list of args for initialisation on blockchain
-func compileSpec(filepath string) ([]string) {
+// Function to obtain the specification source code as a string
+// The input is a filepath to the .quark file
+func getSpecSource(filepath string) (source string) {
   data, err := ioutil.ReadFile(filepath)
   if (err != nil) {
     log.Fatalf("Couldn't read spec file %s", filepath)
   }
-  source := string(data)
-
-  spec, err := q.Parse(source)
-  if (err != nil) {
-    log.Fatal("\nSyntax Error:\n", err, "\n")
-  } else {
-    fmt.Printf("\n%s spec compiled successfully %s \n\n", spec.Constraint.Name, GreenTick)
-  }
-
-  // Create list of args to initialise a new spec
-  specArgs := []string{spec.Constraint.Name, source}
-  return specArgs
+  return string(data)
 }
 
+// Obtains JSON strings of data from a given filepath
+// Returns a slice of strings - each a JSON object
 func getJSONObjectStrsFromFile(filepath string) (strs []string) {
   data, err := ioutil.ReadFile(filepath)
   if (err != nil) {

@@ -7,13 +7,12 @@ import (
 )
 
 // Initialise a new commitment spec on the blockchain
-func (setup *FabricSetup) InvokeInitSpec(inpargs []string) (string, error) {
+func (setup *FabricSetup) InvokeInitSpec(specSource string) (string, error) {
 
   // Prepare arguments
   var args []string
   args = append(args, "initSpec")
-  args = append(args, inpargs[0])
-  args = append(args, inpargs[1])
+  args = append(args, specSource)
 
   eventID := "eventInvoke"
 
@@ -28,17 +27,17 @@ func (setup *FabricSetup) InvokeInitSpec(inpargs []string) (string, error) {
   defer setup.event.Unregister(reg)
 
   // Create a request (proposal) and send it
-  response, err := setup.client.Execute(channel.Request{ChaincodeID: setup.ChainCodeID, Fcn: args[0], Args: [][]byte{[]byte(args[1]), []byte(args[2])}, TransientMap: transientDataMap})
+  response, err := setup.client.Execute(channel.Request{ChaincodeID: setup.ChainCodeID, Fcn: args[0], Args: [][]byte{[]byte(args[1])}, TransientMap: transientDataMap})
   if err != nil {
     return "", fmt.Errorf("failed to move funds: %v", err)
   }
 
   // Wait for the result of the submission
   select {
-  case ccEvent := <-notifier:
-    fmt.Printf("Received CC event: %v\n", ccEvent)
-  case <-time.After(time.Second * 20):
-    return "", fmt.Errorf("did NOT receive CC event for eventId(%s) in init spec", eventID)
+    case ccEvent := <-notifier:
+      fmt.Printf("Received CC event: %v\n", ccEvent)
+    case <-time.After(time.Second * 20):
+      return "", fmt.Errorf("did NOT receive CC event for eventId(%s) in init spec", eventID)
   }
 
   return string(response.TransactionID), nil
@@ -69,10 +68,10 @@ func (setup *FabricSetup) InvokeInitCommitmentData(jsonStrs []string) (string, e
 
   // Wait for the result of the submission
   select {
-  case ccEvent := <-notifier:
-    fmt.Printf("Received CC event: %v\n", ccEvent)
-  case <-time.After(time.Second * 20):
-    return "", fmt.Errorf("did NOT receive CC event for eventId(%s) in init commitment data", eventID)
+    case ccEvent := <-notifier:
+      fmt.Printf("Received CC event: %v\n", ccEvent)
+    case <-time.After(time.Second * 20):
+      return "", fmt.Errorf("did NOT receive CC event for eventId(%s) in init commitment data", eventID)
   }
 
   return string(response.TransactionID), nil

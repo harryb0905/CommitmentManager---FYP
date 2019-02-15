@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"html/template"
 	"strings"
-  "fmt"
-
 	"github.com/scc300/scc300-network/blockchain"
 )
 
@@ -28,16 +26,6 @@ type Application struct {
 	Fabric *blockchain.FabricSetup
 }
 
-type Commitment struct {
-  ComID    string
-  States []ComState
-}
-
-type ComState struct {
-  Name  string
-  Data  map[string]interface{}
-}
-
 type CommitmentMeta struct {
   Name     string  `json:"name"`
   Source   string  `json:"source"`
@@ -50,11 +38,10 @@ func (app *Application) HomeHandler(w http.ResponseWriter, r *http.Request) {
     Failed         		bool
 		Response			 		bool
 		NumComs						int
-		Coms 							[]Commitment
+		Coms 							[]blockchain.Commitment
 		ComState			 		string
 		SpecName       		string
 		SpecSource		 		template.HTML
-		SpecSummary		 		string
   }{
     TransactionId: 		 "",
     Failed:        		 false,
@@ -64,30 +51,29 @@ func (app *Application) HomeHandler(w http.ResponseWriter, r *http.Request) {
 		ComState:			 		 "",
 		SpecName:      		 "",
 		SpecSource:		 		 ``,
-		SpecSummary:	 		 "",
   }
   if r.FormValue("submitted") == "true" {
 		// Get user input
+    fab := app.Fabric
     comName := r.FormValue("comname")
 		comState := r.Form["commitmentState"][0]
 
-		var commitments []Commitment
-		var com CommitmentMeta
-		// var err error
+		var commitments []blockchain.Commitment
+    var err error
+    
+    spec, _ := fab.GetSpec(comName) // er - could'nt get
 
     data.ComState = strings.Title(comState)
     data.SpecName = comName
 
-    fab := app.Fabric
-
     // Obtain commitments based on state
 		switch comState {
 			case "created":
-	      res, er := fab.GetCreatedCommitments(comName)
-        fmt.Println("response:",res, er)
-				if er != nil {
+	      commitments, err = fab.GetCreatedCommitments(comName)
+				if err != nil {
           data.Failed = true
 				}
+        data.Coms = commitments
 				break
 	   //  case "detached":
 				// commitments, com, err = app.GetDetachedCommitments(comName, false, app.Fabric)
@@ -118,9 +104,7 @@ func (app *Application) HomeHandler(w http.ResponseWriter, r *http.Request) {
 			data.TransactionId = comName
 			data.Response = true
 			data.NumComs = len(commitments)
-			data.Coms = commitments
-			data.SpecSource = template.HTML(replacer.Replace(com.Source))
-			data.SpecSummary = com.Summary
+			data.SpecSource = template.HTML(replacer.Replace(spec.Source))
     }
   }
   renderTemplate(w, r, "home.html", data)

@@ -4,10 +4,18 @@ import (
   "fmt"
   "encoding/json"
   "bytes"
-
+  "encoding/binary"
+  "log"
+  // "github.com/davecgh/go-spew/spew"
   "github.com/hyperledger/fabric/core/chaincode/shim"
   pb "github.com/hyperledger/fabric/protos/peer"
-  c "github.com/scc300/scc300-network/chaincode/commitments"
+  q "github.com/scc300/scc300-network/chaincode/commitments/quark"
+)
+
+const (
+  GreenTick = "\033[92m" + "\u2713" + "\033[0m"
+  GetEventQuery = "{\"selector\":{\"docType\":\"%s\"}}"
+  TimeFormat = "Mon Jan _2 15:04:05 2006"
 )
 
 // SCC300NetworkChaincode implementation of Chaincode
@@ -18,6 +26,27 @@ type Spec struct {
   ObjectType  string `json:"docType"`     // docType is used to distinguish the various types of objects in state database
   Name        string `json:"name"`        // Spec name - the field tags are needed to keep case from bouncing around
   Source      string `json:"source"`      // String to store spec source code (quark)
+}
+
+type Commitment struct {
+  ComID    string
+  States []ComState
+}
+
+type ComState struct {
+  Name  string
+  Data  map[string]interface{}
+}
+
+type QueryResponse struct {
+  Key     string
+  Record  map[string]interface{}
+}
+
+type CommitmentMeta struct {
+  Name     string  `json:"name"`
+  Source   string  `json:"source"`
+  Summary  string  `json:"summary"` // may not need...
 }
 
 // ============================================================
@@ -75,8 +104,8 @@ func (t *SCC300NetworkChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Res
 func (t *SCC300NetworkChaincode) initSpec(stub shim.ChaincodeStubInterface, args []string) pb.Response {
   var err error
 
-  if len(args) != 2 {
-    return shim.Error("Incorrect number of arguments. Expecting [<spec_name>, <spec_source>]")
+  if len(args) != 1 {
+    return shim.Error("Incorrect number of arguments. Expecting <spec_source>")
   }
 
   // ==== Input sanitation ====
@@ -84,12 +113,14 @@ func (t *SCC300NetworkChaincode) initSpec(stub shim.ChaincodeStubInterface, args
   if len(args[0]) <= 0 {
     return shim.Error("1st argument must be a non-empty string")
   }
-  if len(args[1]) <= 0 {
-    return shim.Error("2nd argument must be a non-empty string")
-  }
 
-  specName := args[0]
-  source := args[1]
+  // ==== Get spec source from arg list ==== //
+  source := args[0]
+
+  // ==== Compile the specification on the chaincode ==== //
+  // This obtains meta info about the spec ready to initialise on CouchDB ==== //
+  spec, err := compileSpec(source)
+  specName := spec.Constraint.Name
 
   // ==== Check if spec already exists ====
   specAsBytes, err := stub.GetState(specName)
@@ -102,8 +133,8 @@ func (t *SCC300NetworkChaincode) initSpec(stub shim.ChaincodeStubInterface, args
 
   // ==== Create spec object and marshal to JSON ====
   objectType := "spec"
-  spec := &Spec{objectType, specName, source}
-  specJSONasBytes, err := json.Marshal(spec)
+  specRes := &Spec{objectType, specName, source}
+  specJSONasBytes, err := json.Marshal(specRes)
   if err != nil {
     return shim.Error(err.Error())
   }
@@ -117,7 +148,7 @@ func (t *SCC300NetworkChaincode) initSpec(stub shim.ChaincodeStubInterface, args
   //  ==== Index the spec to enable range-based queries, e.g. return all SellItem commitments ====
   // indexName := "owner~name"
   indexName := "name"
-  ownerNameIndexKey, err := stub.CreateCompositeKey(indexName, []string{spec.Name})
+  ownerNameIndexKey, err := stub.CreateCompositeKey(indexName, []string{specRes.Name})
   if err != nil {
     return shim.Error(err.Error())
   }
@@ -170,11 +201,71 @@ func (t *SCC300NetworkChaincode) getSpec(stub shim.ChaincodeStubInterface, args 
   return shim.Success(valAsbytes)
 }
 
+// =========================== GET CREATED COMMITMENTS ===================================
+//  Obtains all created commitments based on a given commitment/spec name.
+//  A commitment is created if it exists on the blockchain CouchDB database.
+// =======================================================================================
 func (t *SCC300NetworkChaincode) getCreatedCommitments(stub shim.ChaincodeStubInterface, args []string) pb.Response {
   comName := args[0]
-  commitments, com, err := c.GetCreatedCommitments(comName)
-  fmt.Println("GET CREATED COMMITMENTS", commitments)
-  return shim.Success(nil)
+  commitments := []Commitment{}
+
+  // Obtain spec from CouchDB based on the comName
+  response := t.getSpec(stub, []string{comName})
+  res := string(response.Payload)
+
+  // Obtain spec from CouchDB based on the comName
+  com := CommitmentMeta{}
+
+  // Unmarshal JSON into structure and obtain source code
+  json.Unmarshal([]byte(res), &com)
+
+  // ==== Compile specification source to obtain struct ==== //
+  specSource := com.Source
+  spec, _ := compileSpec(specSource)
+
+  // Format query and perform query to get created commitment results
+  query := fmt.Sprintf(GetEventQuery, spec.CreateEvent.Name)
+  queryArgs := []string{query}
+  queryRes := t.richQuery(stub, queryArgs)
+  queryResponsesPayload := queryRes.Payload
+
+  // Unmarshal JSON response from query
+  responses := []QueryResponse{}
+  json.Unmarshal([]byte(queryResponsesPayload), &responses)
+
+  // Create commitments from responses with data per commitment state
+  for _, elem := range responses {
+   commitments = append(commitments,
+     Commitment{
+       ComID: elem.Record["comID"].(string),
+       States: []ComState {
+         ComState{
+           Name: "Created",
+           Data: elem.Record,
+         },
+         ComState{Name: "Detached", Data: nil,},
+         ComState{Name: "Discharged", Data: nil,},
+       },
+     },
+   )
+  }
+  // return commitments, com, err;
+
+  buf := new(bytes.Buffer)
+  b, err := json.Marshal(commitments)
+  if err != nil {
+    return shim.Error(err.Error())
+  }
+
+  err = binary.Write(buf, binary.BigEndian, &b)
+  if err != nil {
+    fmt.Println("binary.Write failed:", err)
+  }
+
+  fmt.Println(buf.Bytes())
+  fmt.Println(":::CREATED COMMITMENTS:::", commitments)
+  return shim.Success(buf.Bytes())
+  // return nil, com, fmt.Errorf("Couldn't get %s created commitments", comName)
 }
 
 // ======================================================================
@@ -305,6 +396,45 @@ func constructQueryResponseFromIterator(resultsIterator shim.StateQueryIteratorI
   buffer.WriteString("]")
 
   return &buffer, nil
+}
+
+// Function to obtain specification info based on file input data
+// A list of args for initialisation on the blockchain is created
+// func getSpecInfo(specSource string) (meta CommitmentMeta, spec Spec, err error) {
+//   spec, err := q.Parse(source)
+//   if (err != nil) {
+//     log.Fatal("\nSyntax Error:\n", err, "\n")
+//   } else {
+//     fmt.Printf("\n%s spec compiled successfully %s \n\n", spec.Constraint.Name, GreenTick)
+//   }
+
+//   // Obtain spec from CouchDB based on the comName
+//   com := CommitmentMeta{}
+//   response, er := t.getSpec(comName)
+//   if (er != nil) {
+//     return com, nil, er
+//   }
+
+//   // Unmarshal JSON into structure and obtain source code
+//   json.Unmarshal([]byte(response), &com)
+
+//   // Compile specification (using custom built compiler) to obtain events
+//   spec, _ = q.Parse(com.Source)
+//   return com, spec, nil;
+
+//   // Create list of args to initialise a new spec
+//   // specArgs := []string{spec.Constraint.Name, source}
+//   // return specArgs
+// }
+
+func compileSpec(source string) (res *q.Spec, err error) {
+  spec, err := q.Parse(source)
+  if (err != nil) {
+    log.Fatal("\nSyntax Error:\n", err, "\n")
+  } else {
+    fmt.Printf("\n%s spec compiled successfully %s \n\n", spec.Constraint.Name, GreenTick)
+  }
+  return spec, err
 }
 
 // ==================================================================
