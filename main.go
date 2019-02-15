@@ -13,10 +13,6 @@ import (
 	"github.com/scc300/scc300-network/web/controllers"
 )
 
-const (
-  JSONDataFile = "./specs/test_data.json"
-)
-
 func main() {
 	// Definition of the Fabric SDK properties
 	fSetup := blockchain.FabricSetup{
@@ -59,11 +55,18 @@ func main() {
   specSource := getSpecSource("./specs/SellItem.quark")
   _, err = fSetup.InvokeInitSpec(specSource)
   if err != nil {
-    log.Fatalf("Unable to initialise commitment on the chaincode: %v\n", err)
+    log.Fatalf("Unable to initialise SellItem commitment on the chaincode: %v\n", err)
+  }
+
+  // Another commitment initialisation
+  specSource = getSpecSource("./specs/SellBook.quark")
+  _, err = fSetup.InvokeInitSpec(specSource)
+  if err != nil {
+    log.Fatalf("Unable to initialise SellBook commitment on the chaincode: %v\n", err)
   }
 
   // Commitment Data Initialisation - Read JSON file and add initial data to blockchain (because we assume data already exists)
-  jsonStrs := getJSONObjectStrsFromFile(JSONDataFile)
+  jsonStrs := getJSONObjectStrsFromFile("./specs/test_data.json")
 	_, err = fSetup.InvokeInitCommitmentData(jsonStrs)
   if err != nil {
     log.Fatalf("Unable to initialise commitment data on the chaincode: %v\n", err)

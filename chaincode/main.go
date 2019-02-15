@@ -2,14 +2,17 @@ package main
 
 import (
   "fmt"
-  "encoding/json"
+  "time"
+  "math"
+  "strconv"
   "bytes"
   "encoding/binary"
+  "encoding/json"
   "log"
   // "github.com/davecgh/go-spew/spew"
   "github.com/hyperledger/fabric/core/chaincode/shim"
   pb "github.com/hyperledger/fabric/protos/peer"
-  q "github.com/scc300/scc300-network/chaincode/commitments/quark"
+  q "github.com/scc300/scc300-network/chaincode/quark"
 )
 
 const (
@@ -44,15 +47,14 @@ type QueryResponse struct {
 }
 
 type CommitmentMeta struct {
-  Name     string  `json:"name"`
-  Source   string  `json:"source"`
-  Summary  string  `json:"summary"` // may not need...
+  Name    string `json:"name"`
+  Source  string `json:"source"`
 }
 
-// ============================================================
+// =============================================================================
 // Init - This function is called only one when the chaincode is instantiated.
 // Goal is to prepare the ledger to handle future requests.
-// ============================================================
+// =============================================================================
 func (t *SCC300NetworkChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 
   // Get the function and arguments from the request
@@ -85,13 +87,21 @@ func (t *SCC300NetworkChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Res
     return t.initSpec(stub, args)
   } else if function == "getSpec" {
     return t.getSpec(stub, args)
-  } else if function == "getCreatedCommitments" {
-    return t.getCreatedCommitments(stub, args)
   } else if function == "initCommitmentData" {
     return t.initCommitmentData(stub, args)
   } else if function == "richQuery" {
     return t.richQuery(stub, args)
-  }
+  } else if function == "getCreatedCommitments" {
+    return t.getCreatedCommitments(stub, args)
+  } else if function == "getDetachedCommitments" {
+    return t.getDetachedCommitments(stub, args)
+  } else if function == "getExpiredCommitments" {
+    return t.getExpiredCommitments(stub, args)
+  } else if function == "getDischargedCommitments" {
+    return t.getDischargedCommitments(stub, args)
+  } else if function == "getViolatedCommitments" {
+    return t.getViolatedCommitments(stub, args)
+  } 
 
   // ==== If the arguments given don’t match any function, we return an error ====
   return shim.Error("Unknown action, check the first argument")
@@ -105,7 +115,7 @@ func (t *SCC300NetworkChaincode) initSpec(stub shim.ChaincodeStubInterface, args
   var err error
 
   if len(args) != 1 {
-    return shim.Error("Incorrect number of arguments. Expecting <spec_source>")
+    return shim.Error("Incorrect number of arguments. Expecting <specSource>")
   }
 
   // ==== Input sanitation ====
@@ -201,39 +211,45 @@ func (t *SCC300NetworkChaincode) getSpec(stub shim.ChaincodeStubInterface, args 
   return shim.Success(valAsbytes)
 }
 
-// =========================== GET CREATED COMMITMENTS ===================================
+// =============================== COMMITMENT API METHODS ================================= //
+//  getCreatedCommitments(stub, args): obtains all created commitments by spec name.
+//  getDetachedCommitments(stub, args): obtains all detached commitments by spec name.
+//  getDischargedCommitments(stub, args): obtains all discharged commitments by spec name.
+//  getExpiredCommitments(stub, args): obtains all expired commitments by spec name.
+//  getViolatedCommitments(stub, args): obtains all violated commitments by spec name.
+// ======================================================================================== //
+
+// =========================== GET CREATED COMMITMENTS ========================
 //  Obtains all created commitments based on a given commitment/spec name.
 //  A commitment is created if it exists on the blockchain CouchDB database.
-// =======================================================================================
+// ============================================================================
 func (t *SCC300NetworkChaincode) getCreatedCommitments(stub shim.ChaincodeStubInterface, args []string) pb.Response {
   comName := args[0]
   commitments := []Commitment{}
 
-  // Obtain spec from CouchDB based on the comName
+  // ==== Obtain spec from CouchDB based on the comName ==== //
   response := t.getSpec(stub, []string{comName})
   res := string(response.Payload)
 
-  // Obtain spec from CouchDB based on the comName
+  // ==== Unmarshal JSON into structure and obtain source code ==== //
   com := CommitmentMeta{}
-
-  // Unmarshal JSON into structure and obtain source code
   json.Unmarshal([]byte(res), &com)
 
   // ==== Compile specification source to obtain struct ==== //
   specSource := com.Source
   spec, _ := compileSpec(specSource)
 
-  // Format query and perform query to get created commitment results
+  // ==== Format and perform query to get created commitment results ==== //
   query := fmt.Sprintf(GetEventQuery, spec.CreateEvent.Name)
   queryArgs := []string{query}
   queryRes := t.richQuery(stub, queryArgs)
   queryResponsesPayload := queryRes.Payload
 
-  // Unmarshal JSON response from query
+  // ==== Unmarshal JSON response from query ==== //
   responses := []QueryResponse{}
   json.Unmarshal([]byte(queryResponsesPayload), &responses)
 
-  // Create commitments from responses with data per commitment state
+  // ==== Create commitments from responses with data per commitment state ==== //
   for _, elem := range responses {
    commitments = append(commitments,
      Commitment{
@@ -249,23 +265,285 @@ func (t *SCC300NetworkChaincode) getCreatedCommitments(stub shim.ChaincodeStubIn
      },
    )
   }
-  // return commitments, com, err;
 
-  buf := new(bytes.Buffer)
-  b, err := json.Marshal(commitments)
-  if err != nil {
-    return shim.Error(err.Error())
-  }
-
-  err = binary.Write(buf, binary.BigEndian, &b)
-  if err != nil {
-    fmt.Println("binary.Write failed:", err)
-  }
-
-  fmt.Println(buf.Bytes())
-  fmt.Println(":::CREATED COMMITMENTS:::", commitments)
-  return shim.Success(buf.Bytes())
+  // ==== Convert commitments to bytes to send to requester ==== //
+  commitmentsBytes, _ := commitmentsToBytes(commitments)
+  return shim.Success(commitmentsBytes)
   // return nil, com, fmt.Errorf("Couldn't get %s created commitments", comName)
+}
+
+// =========================== GET DETACHED COMMITMENTS ======================================
+//  Obtains all detached commitments based on a given commitment/spec name.
+//  A commitment is detached if the created event exists on the blockchain CouchDB database
+//  and the detached event has occured within the specified deadline.
+//  If the commitment isn't detached and the deadline has exceeded, the commitment expires.
+// ===========================================================================================
+func (t *SCC300NetworkChaincode) getDetachedCommitments(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+  // ==== Create commitments from responses with data per commitment state ==== //
+  commitments := []Commitment{}
+
+  // ==== Extract args ==== //
+  if len(args) != 2 {
+    return shim.Error("Incorrect number of arguments. Expecting [<comName>, <wantExpired>]")
+  }
+
+  comName := args[0]
+  wantExpired, _ := strconv.ParseBool(args[1])
+
+  // ==== Input sanitation ====
+  if len(comName) <= 0 {
+    return shim.Error("1st argument must be a non-empty string")
+  }
+
+  // ==== Obtain spec from CouchDB based on the comName ==== //
+  response := t.getSpec(stub, []string{comName})
+  res := string(response.Payload)
+
+  // ==== Unmarshal JSON into structure and obtain source code ==== //
+  com := CommitmentMeta{}
+  json.Unmarshal([]byte(res), &com)
+
+  // ==== Compile specification source to obtain struct ==== //
+  specSource := com.Source
+  spec, _ := compileSpec(specSource)
+
+  // ==== Check if this commitment has been created (can't be detached if not already created) ==== //
+  createdResponse := t.getCreatedCommitments(stub, []string{comName})
+  createdComs := []Commitment{}
+  json.Unmarshal([]byte(createdResponse.Payload), &createdComs)
+
+  // ==== Extract the deadline value from the spec source (e.g. deadline=5) ==== //
+  deadline := getDeadline(spec.DetachEvent.Args)
+
+  // ==== Format and perform query to get detached commitment results ==== //
+  query := fmt.Sprintf(GetEventQuery, spec.DetachEvent.Name)
+  queryArgs := []string{query}
+  queryRes := t.richQuery(stub, queryArgs)
+  queryResponsesPayload := queryRes.Payload
+
+  // ==== Unmarshal JSON response from query ==== //
+  responses := []QueryResponse{}
+  json.Unmarshal([]byte(queryResponsesPayload), &responses)
+  hasDetachedEvent := false
+
+  // ==== Date checks with deadlines on detached results ==== //
+  // ==== If detach event record exists and that timestamp is within a period of x days or less from offer being created, this commitment is detached ==== //
+  for _, createdCom := range createdComs {
+    for _, comRes := range responses {
+    // ==== Get created commitment that corresponds to this detached commitment ==== //
+      if (createdCom.ComID == comRes.Record["comID"].(string)) {
+        hasDetachedEvent = true
+        // ==== Extract date for checking deadline ==== //
+        createdDateStr := createdCom.States[0].Data["date"].(string)
+        detachedDateStr := comRes.Record["date"].(string)
+
+        // ==== If detached event date is within specified deadline, include in results ==== //
+        withinDeadline := isDateWithinDeadline(createdDateStr, detachedDateStr, deadline)
+        if ((withinDeadline && !wantExpired) || (!withinDeadline && wantExpired)) {
+          commitments = append(commitments,
+            Commitment{
+              ComID: createdCom.ComID,
+              States: []ComState {
+                ComState{
+                  Name: "Created",
+                  Data: createdCom.States[0].Data,
+                 },
+                ComState{
+                  Name: "Detached",
+                  Data: comRes.Record,
+                },
+                ComState{Name: "Discharged", Data: nil,},
+              },
+            },
+          )
+        }
+        break
+      }
+    }
+
+    // ==== Edge case where create event exists but detach event doesn't ==== //
+    // ==== (i.e. use todays date to determine if it should be detached ==== //
+    if (!hasDetachedEvent) {
+
+      // ==== Extract dates for checking deadline ==== //
+      createdDateStr := createdCom.States[0].Data["date"].(string)
+      todayStr := time.Now().String()
+
+      // ==== If detach event date is within specified deadline, include in results ==== //
+      withinDeadline := isDateWithinDeadline(createdDateStr, todayStr, deadline)
+      if (!withinDeadline && wantExpired) {
+        commitments = append(commitments,
+          Commitment{
+            ComID: createdCom.ComID,
+            States: []ComState {
+              ComState{
+                Name: "Created",
+                Data: createdCom.States[0].Data,
+              },
+              ComState{
+                Name: "Detached",
+                Data: nil,
+              },
+              ComState{Name: "Discharged", Data: nil,},
+            },
+          },
+        )
+      }
+    }
+    hasDetachedEvent = false
+  }
+  // ==== Convert commitments to bytes to send to requester ==== //
+  commitmentsBytes, _ := commitmentsToBytes(commitments)
+  return shim.Success(commitmentsBytes)
+}
+
+// =========================== GET DISCHARGED COMMITMENTS =======================
+//  Obtains all discharged commitments based on a given commitment/spec name
+// ==============================================================================
+func (t *SCC300NetworkChaincode) getDischargedCommitments(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+  // ==== Create commitments from responses with data per commitment state ==== //
+  commitments := []Commitment{}
+
+  // ==== Extract args ==== //
+  if len(args) != 2 {
+    return shim.Error("Incorrect number of arguments. Expecting [<comName>, <wantViolated>]")
+  }
+
+  comName := args[0]
+  wantViolated, _ := strconv.ParseBool(args[1])
+
+  // ==== Input sanitation ====
+  if len(comName) <= 0 {
+    return shim.Error("1st argument must be a non-empty string")
+  }
+
+  // ==== Obtain spec from CouchDB based on the comName ==== //
+  response := t.getSpec(stub, []string{comName})
+  res := string(response.Payload)
+
+  // ==== Unmarshal JSON into structure and obtain source code ==== //
+  com := CommitmentMeta{}
+  json.Unmarshal([]byte(res), &com)
+
+  // ==== Compile specification source to obtain struct ==== //
+  specSource := com.Source
+  spec, _ := compileSpec(specSource)
+
+  // ==== Check if this commitment has been detached (can't be discharged if not already detached) ==== //
+  // ==== Extra false arg is required to only get the detached commitments (i.e. don't want expired) ==== //
+  detachedResponse := t.getDetachedCommitments(stub, []string{comName, "false"})
+  detachedComs := []Commitment{}
+  json.Unmarshal([]byte(detachedResponse.Payload), &detachedComs)
+
+  // ==== Extract the deadline value from the spec source (e.g. deadline=5) ==== //
+  deadline := getDeadline(spec.DischargeEvent.Args)
+
+  // ==== Format and perform query to get discharged commitment results ==== //
+  query := fmt.Sprintf(GetEventQuery, spec.DischargeEvent.Name)
+  queryArgs := []string{query}
+  queryRes := t.richQuery(stub, queryArgs)
+  queryResponsesPayload := queryRes.Payload
+
+  // ==== Unmarshal JSON response from query ==== //
+  responses := []QueryResponse{}
+  json.Unmarshal([]byte(queryResponsesPayload), &responses)
+  hasDischargedEvent := false
+
+  fmt.Println("detachedComs:", detachedComs)
+
+  // ==== Date checks with deadlines on discharged results ==== //
+  // ==== If discharge event record exists and that timestamp is within a period of x days or less from offer being detached, this commitment is discharged ==== //
+  for _, detachedCom := range detachedComs {
+    for _, comRes := range responses {
+      // ==== Get detachec commitment that corresponds to this detached commitment ==== //
+      if (detachedCom.ComID == comRes.Record["comID"].(string)) {
+        hasDischargedEvent = true
+        // ==== Extract date for checking deadline ==== //
+        createdDateStr := detachedCom.States[0].Data["date"].(string)
+        dischargedDateStr := comRes.Record["date"].(string)
+
+        // ==== If discharge event date is within specified deadline, include in results ==== //
+        withinDeadline := isDateWithinDeadline(createdDateStr, dischargedDateStr, deadline)
+        if ((withinDeadline && !wantViolated) || (!withinDeadline && wantViolated)) {
+          commitments = append(commitments,
+            Commitment{
+              ComID: comRes.Record["comID"].(string),
+              States: []ComState {
+                ComState{
+                  Name: "Created",
+                  Data: detachedCom.States[0].Data,
+                },
+                ComState{
+                  Name: "Detached",
+                  Data: detachedCom.States[1].Data,
+                },
+                ComState{
+                  Name: "Discharged",
+                  Data: comRes.Record,
+                },
+              },
+            },
+          )
+        }
+        break
+      }
+    }
+
+    // ==== Edge case where detach event exists but discharge event doesn't ==== //
+    // ==== (i.e. use todays date to determine if it should be discharged ==== //
+    if (!hasDischargedEvent) {
+
+      // ==== Extract dates for checking deadline ==== //
+      detachedDateStr := detachedCom.States[1].Data["date"].(string)
+      todayStr := time.Now().String()
+
+      // ==== If discharge event date is within specified deadline, include in results ==== //
+      withinDeadline := isDateWithinDeadline(detachedDateStr, todayStr, deadline)
+      if (!withinDeadline && wantViolated) {
+        commitments = append(commitments,
+          Commitment{
+            ComID: detachedCom.ComID,
+            States: []ComState {
+              ComState{
+                Name: "Created",
+                Data: detachedCom.States[0].Data,
+              },
+              ComState{
+                Name: "Detached",
+                Data: detachedCom.States[1].Data,
+              },
+              ComState{
+                Name: "Discharged",
+                Data: nil,
+              },
+            },
+          },
+        )
+      }
+    }
+    hasDischargedEvent = false
+  }
+  // ==== Convert commitments to bytes to send to requester ==== //
+  commitmentsBytes, _ := commitmentsToBytes(commitments)
+  return shim.Success(commitmentsBytes)
+}
+
+// =========================== GET EXPIRED COMMITMENTS ======================
+//  Obtains all expired commitments based on a given commitment/spec name
+//  This method simply calls getDetachedCommitments() with an extra
+//  boolean flag of 'true' to obtain all the failed detached commitments
+// ==========================================================================
+func (t *SCC300NetworkChaincode) getExpiredCommitments(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+  return t.getDetachedCommitments(stub, args)
+}
+
+// =========================== GET VIOLATED COMMITMENTS ======================
+//  Obtains all violated commitments based on a given commitment/spec name
+//  This method simply calls getDischargedCommitments() with an extra
+//  boolean flag of 'true' to obtain all the failed discharged commitments
+// ===========================================================================
+func (t *SCC300NetworkChaincode) getViolatedCommitments(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+  return t.getDischargedCommitments(stub, args)
 }
 
 // ======================================================================
@@ -398,35 +676,9 @@ func constructQueryResponseFromIterator(resultsIterator shim.StateQueryIteratorI
   return &buffer, nil
 }
 
-// Function to obtain specification info based on file input data
-// A list of args for initialisation on the blockchain is created
-// func getSpecInfo(specSource string) (meta CommitmentMeta, spec Spec, err error) {
-//   spec, err := q.Parse(source)
-//   if (err != nil) {
-//     log.Fatal("\nSyntax Error:\n", err, "\n")
-//   } else {
-//     fmt.Printf("\n%s spec compiled successfully %s \n\n", spec.Constraint.Name, GreenTick)
-//   }
-
-//   // Obtain spec from CouchDB based on the comName
-//   com := CommitmentMeta{}
-//   response, er := t.getSpec(comName)
-//   if (er != nil) {
-//     return com, nil, er
-//   }
-
-//   // Unmarshal JSON into structure and obtain source code
-//   json.Unmarshal([]byte(response), &com)
-
-//   // Compile specification (using custom built compiler) to obtain events
-//   spec, _ = q.Parse(com.Source)
-//   return com, spec, nil;
-
-//   // Create list of args to initialise a new spec
-//   // specArgs := []string{spec.Constraint.Name, source}
-//   // return specArgs
-// }
-
+// ==================================================================
+// compileSpec - compiles a specification source code to a go struct
+// ==================================================================
 func compileSpec(source string) (res *q.Spec, err error) {
   spec, err := q.Parse(source)
   if (err != nil) {
@@ -437,8 +689,53 @@ func compileSpec(source string) (res *q.Spec, err error) {
   return spec, err
 }
 
+// ======================================================================================
+// isDateWithinDeadline - perform Go time arithmetic on dates with specified deadline 
+// (e.g. deadline=5 means payment must occur within 5 days of the offer being created)
+// ======================================================================================
+func isDateWithinDeadline(date1 string, date2 string, deadline float64) (within bool) {
+  createEventDate, _ := time.Parse(TimeFormat, date1)
+  detachEventDate, _ := time.Parse(TimeFormat, date2)
+  daysDiff := float64(detachEventDate.Sub(createEventDate).Hours() / 24)
+
+  if (math.Abs(daysDiff) >= deadline) {
+    return false
+  } else {
+    return true
+  }
+}
+
+// ====================================================================
+// getDeadline - obtains the deadline value from the list of arguments
+// ====================================================================
+func getDeadline(args []q.Arg) (res float64) {
+  deadline := -1.0
+  for _, arg := range args {
+    if arg.Name == "deadline" {
+      deadline, _ = strconv.ParseFloat(arg.Value, 64)
+    }
+  }
+  return deadline
+}
+
+// =============================================================================
+// commitmentsToBytes - converts a slice of commitment structs to a byte array
+// =============================================================================
+func commitmentsToBytes(commitments []Commitment) (res []byte, err error) {
+  buf := new(bytes.Buffer)
+  b, err := json.Marshal(commitments)
+  if err != nil {
+    return nil, err
+  }
+  err = binary.Write(buf, binary.BigEndian, &b)
+  if err != nil {
+    return nil, err
+  }
+  return buf.Bytes(), nil
+}
+
 // ==================================================================
-// main - start the chaincode and make it ready for future requests.
+// main - start the chaincode and make it ready for future requests
 // ==================================================================
 func main() {
   err := shim.Start(new(SCC300NetworkChaincode))

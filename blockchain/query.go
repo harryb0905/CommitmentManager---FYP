@@ -2,9 +2,18 @@ package blockchain
 
 import (
 	"fmt"
+  "errors"
   "encoding/json"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 )
+
+var comStateFunctions = map[string]interface{}{
+  "created": "getCreatedCommitments",
+  "detached": "getDetachedCommitments",
+  "expired": "getExpiredCommitments",
+  "discharged": "getDischargedCommitments",
+  "violated": "getViolatedCommitments",
+}
 
 type Commitment struct {
   ComID    string
@@ -42,18 +51,33 @@ func (setup *FabricSetup) GetSpec(name string) (res *CommitmentMeta, err error) 
   return com, nil
 }
 
-// GetCreatedCommitments - query the chaincode to obtain created commitments
-func (setup *FabricSetup) GetCreatedCommitments(comName string) (coms[] Commitment, err error) {
+// GetCommitments - query the chaincode to obtain commitments for a particular state
+// States: created, detached, expired, discharged, violated
+func (setup *FabricSetup) GetCommitments(comName string, comState string) (coms[] Commitment, err error) {
 
   // Prepare results
   commitments := []Commitment{}
+  var chaincodeFunc string
+
+  // Sanity check
+  if chaincodeFunc = comStateFunctions[comState].(string); chaincodeFunc == "" {
+    return commitments, errors.New("Unsupported commitment state chosen")
+  }
 
   // Prepare arguments
   var args []string
-  args = append(args, "getCreatedCommitments")
+  args = append(args, chaincodeFunc)
   args = append(args, comName)
 
-  response, err := setup.client.Query(channel.Request{ChaincodeID: setup.ChainCodeID, Fcn: args[0], Args: [][]byte{[]byte(args[1])}})
+  // Calls getDetachedCommitments/getDischargedCommitments in the chaincode logic with extra arg
+  // Prevents repetition of code by using a boolean flag
+  if chaincodeFunc == "getExpiredCommitments" || chaincodeFunc == "getViolatedCommitments" {
+    args = append(args, "true")
+  } else {
+    args = append(args, "false")
+  }
+
+  response, err := setup.client.Query(channel.Request{ChaincodeID: setup.ChainCodeID, Fcn: args[0], Args: [][]byte{[]byte(args[1]), []byte(args[2])}})
   if err != nil {
     return commitments, fmt.Errorf("failed to query: %v", err)
   }
