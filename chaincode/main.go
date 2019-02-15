@@ -449,8 +449,6 @@ func (t *SCC300NetworkChaincode) getDischargedCommitments(stub shim.ChaincodeStu
   json.Unmarshal([]byte(queryResponsesPayload), &responses)
   hasDischargedEvent := false
 
-  fmt.Println("detachedComs:", detachedComs)
-
   // ==== Date checks with deadlines on discharged results ==== //
   // ==== If discharge event record exists and that timestamp is within a period of x days or less from offer being detached, this commitment is discharged ==== //
   for _, detachedCom := range detachedComs {
@@ -554,7 +552,6 @@ func (t *SCC300NetworkChaincode) initCommitmentData(stub shim.ChaincodeStubInter
 
   // === Add slice data to database ===
   for _, commitmentDataJSON := range args {
-    fmt.Println("STR:", commitmentDataJSON)
     commitmentDataJSONBytes := []byte(commitmentDataJSON)
 
     // === Obtain event name from current JSON string ===

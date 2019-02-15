@@ -1,4 +1,4 @@
 spec SellBook dID to cID
-  create Offer [book_name,author,ISBN]
-  detach Pay [amount,address,shippingtype] deadline=25
-  discharge Delivery [courier] deadline=3
+  create BookOffer [bookname,author,ISBN]
+  detach BookPay [amount] deadline=25
+  discharge DeliverBook [libraryname] deadline=3
