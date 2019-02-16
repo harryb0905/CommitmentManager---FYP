@@ -7,10 +7,10 @@ import (
   "encoding/json"
   "reflect"
   "log"
-
 	"github.com/scc300/scc300-network/blockchain"
-	"github.com/scc300/scc300-network/web"
-	"github.com/scc300/scc300-network/web/controllers"
+	"github.com/scc300/scc300-network/web/customer"
+  "github.com/scc300/scc300-network/web/merchant"
+  "github.com/scc300/scc300-network/web/controllers"
 )
 
 func main() {
@@ -72,15 +72,18 @@ func main() {
     log.Fatalf("Unable to initialise commitment data on the chaincode: %v\n", err)
   }
 
-	// Launch the web application
-	app := &controllers.Application{
-		Fabric: &fSetup,
-	}
-	web.Serve(app)
+	// Launch the customer web application
+	customer.Serve(&controllers.Application{
+    Fabric: &fSetup,
+  })
+
+  // Launch the merchant web application
+  merchant.Serve(&controllers.Application{
+    Fabric: &fSetup,
+  })
 }
 
-// Function to obtain the specification source code as a string
-// The input is a filepath to the .quark file
+// Function to obtain the specification source code as a string (input is a filepath to the .quark file)
 func getSpecSource(filepath string) (source string) {
   data, err := ioutil.ReadFile(filepath)
   if (err != nil) {
@@ -89,8 +92,8 @@ func getSpecSource(filepath string) (source string) {
   return string(data)
 }
 
-// Obtains JSON strings of data from a given filepath
-// Returns a slice of strings - each a JSON object
+// Obtains JSON strings of data from a given filepath as a string
+// Returns a slice of strings - each a JSON object in string form
 func getJSONObjectStrsFromFile(filepath string) (strs []string) {
   data, err := ioutil.ReadFile(filepath)
   if (err != nil) {
@@ -117,6 +120,5 @@ func getJSONObjectStrsFromFile(filepath string) (strs []string) {
     jsonString, _ := json.Marshal(obj)
     jsonStrs = append(jsonStrs, string(jsonString))
   }
-
   return jsonStrs
 }
