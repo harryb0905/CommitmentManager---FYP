@@ -33,7 +33,7 @@
     {{ $source := .SpecSource }}
 
     <div id="commitments">
-      {{ if not .Failed }}
+      {{ if and (not .Failed) (ne .NumComs 0) }}
         <div>
           <h4 class="uk-text uk-text-medium">{{ .NumComs }} {{ .ComState }} {{ .SpecName }} commitment(s) found:</h4>
           <table class="uk-table uk-table-hover uk-table-divider uk-table-striped">

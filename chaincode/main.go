@@ -9,15 +9,15 @@ import (
   "encoding/binary"
   "encoding/json"
   "log"
-  // "github.com/davecgh/go-spew/spew"
   "github.com/hyperledger/fabric/core/chaincode/shim"
   pb "github.com/hyperledger/fabric/protos/peer"
   q "github.com/scc300/scc300-network/chaincode/quark"
 )
 
 const (
-  GreenTick = "\033[92m" + "\u2713" + "\033[0m"
   GetEventQuery = "{\"selector\":{\"docType\":\"%s\"}}"
+
+  GreenTick = "\033[92m" + "\u2713" + "\033[0m"
   TimeFormat = "Mon Jan _2 15:04:05 2006"
 )
 
@@ -26,46 +26,41 @@ type SCC300NetworkChaincode struct {
 }
 
 type Spec struct {
-  ObjectType  string `json:"docType"`     // docType is used to distinguish the various types of objects in state database
-  Name        string `json:"name"`        // Spec name - the field tags are needed to keep case from bouncing around
-  Source      string `json:"source"`      // String to store spec source code (quark)
+  ObjectType  string `json:"docType"`  // docType - used to distinguish the various types of objects in state database
+  Name        string `json:"name"`     // Spec name - the name of the specification
+  Source      string `json:"source"`   // Source - string to store spec source code (.quark file)
 }
 
 type Commitment struct {
-  ComID    string
-  States []ComState
+  ComID    string     // ComID - stores this commitment ID (each commitment is unique)
+  States []ComState   // States - slice of commitment states 
 }
 
 type ComState struct {
-  Name  string
-  Data  map[string]interface{}
+  Name  string                    // Name - name of this particular commitment state (i.e. created, detached, discharged, expired, violated)
+  Data  map[string]interface{}    // Data - map of data associated with this state
 }
 
 type QueryResponse struct {
-  Key     string
-  Record  map[string]interface{}
-}
-
-type CommitmentMeta struct {
-  Name    string `json:"name"`
-  Source  string `json:"source"`
+  Key     string                  // Key - the key for this query response
+  Record  map[string]interface{}  // Record - the record associated with this key for this query response
 }
 
 // =============================================================================
-// Init - This function is called only one when the chaincode is instantiated.
+// Init - This function is called only once when the chaincode is instantiated.
 // Goal is to prepare the ledger to handle future requests.
 // =============================================================================
 func (t *SCC300NetworkChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 
-  // Get the function and arguments from the request
+  // ==== Get the function and arguments from the request ==== //
   function, _ := stub.GetFunctionAndParameters()
 
-  // Check if the request is the init function
+  // ==== Check if the request is the init function ==== //
   if function != "init" {
     return shim.Error("Unknown function call")
   }
 
-  // Return a successful message
+  // ==== Return a successful message ==== //
   return shim.Success(nil)
 }
 
@@ -74,15 +69,15 @@ func (t *SCC300NetworkChaincode) Init(stub shim.ChaincodeStubInterface) pb.Respo
 // ============================================================
 func (t *SCC300NetworkChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 
-  // ==== Get the function and arguments from the request ====
+  // ==== Get the function and arguments from the request ==== //
   function, args := stub.GetFunctionAndParameters()
 
-  // ==== Check whether the number of arguments is sufficient ====
+  // ==== Check whether the number of arguments is sufficient ==== //
   if len(args) < 1 {
     return shim.Error("The number of arguments is insufficient.")
   }
 
-  // ==== Handle different functions ====
+  // ==== Handle different functions ==== //
   if function == "initSpec" {
     return t.initSpec(stub, args)
   } else if function == "getSpec" {
@@ -103,7 +98,7 @@ func (t *SCC300NetworkChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Res
     return t.getViolatedCommitments(stub, args)
   } 
 
-  // ==== If the arguments given don’t match any function, we return an error ====
+  // ==== If the arguments given don’t match any function, we return an error ==== //
   return shim.Error("Unknown action, check the first argument")
 }
 
@@ -118,7 +113,7 @@ func (t *SCC300NetworkChaincode) initSpec(stub shim.ChaincodeStubInterface, args
     return shim.Error("Incorrect number of arguments. Expecting <specSource>")
   }
 
-  // ==== Input sanitation ====
+  // ==== Input sanitation ==== //
   fmt.Println("- start init spec")
   if len(args[0]) <= 0 {
     return shim.Error("1st argument must be a non-empty string")
@@ -128,11 +123,11 @@ func (t *SCC300NetworkChaincode) initSpec(stub shim.ChaincodeStubInterface, args
   source := args[0]
 
   // ==== Compile the specification on the chaincode ==== //
-  // This obtains meta info about the spec ready to initialise on CouchDB ==== //
+  // ==== This obtains meta info about the spec ready to initialise on CouchDB ==== //
   spec, err := compileSpec(source)
   specName := spec.Constraint.Name
 
-  // ==== Check if spec already exists ====
+  // ==== Check if spec already exists ==== //
   specAsBytes, err := stub.GetState(specName)
   if err != nil {
     return shim.Error("Failed to get spec: " + err.Error())
@@ -141,7 +136,7 @@ func (t *SCC300NetworkChaincode) initSpec(stub shim.ChaincodeStubInterface, args
     return shim.Error("This spec already exists: " + specName)
   }
 
-  // ==== Create spec object and marshal to JSON ====
+  // ==== Create spec object and marshal to JSON ==== //
   objectType := "spec"
   specRes := &Spec{objectType, specName, source}
   specJSONasBytes, err := json.Marshal(specRes)
@@ -149,29 +144,28 @@ func (t *SCC300NetworkChaincode) initSpec(stub shim.ChaincodeStubInterface, args
     return shim.Error(err.Error())
   }
 
-  // ==== Save spec to state ====
+  // ==== Save spec to state ==== //
   err = stub.PutState(specName, specJSONasBytes)
   if err != nil {
     return shim.Error(err.Error())
   }
 
-  //  ==== Index the spec to enable range-based queries, e.g. return all SellItem commitments ====
-  // indexName := "owner~name"
+  //  ==== Index the spec to enable range-based queries, e.g. return all SellItem commitments ==== //
   indexName := "name"
   ownerNameIndexKey, err := stub.CreateCompositeKey(indexName, []string{specRes.Name})
   if err != nil {
     return shim.Error(err.Error())
   }
 
-  //  ==== Save index entry to state. Only the key name is needed, no need to store a duplicate copy of the commitment. ====
-  //  ==== Note - passing a 'nil' value will effectively delete the key from state, therefore we pass null character as value. ====
+  //  ==== Save index entry to state. Only the key name is needed, no need to store a duplicate copy of the commitment ==== //
+  //  ==== Note - passing a 'nil' value will effectively delete the key from state, therefore we pass null character as value ==== //
   value := []byte{0x00}
   stub.PutState(ownerNameIndexKey, value)
 
-  // ==== Spec saved and indexed. Return success ====
+  // ==== Spec saved and indexed. Return success ==== //
   fmt.Println("- end init spec")
 
-  // ==== Notify listeners that an event "eventInvoke" have been executed (see invoke.go) ====
+  // ==== Notify listeners that an event "eventInvoke" have been executed (see invoke.go) ==== //
   err = stub.SetEvent("eventInvoke", []byte{})
   if err != nil {
     return shim.Error(err.Error())
@@ -191,7 +185,7 @@ func (t *SCC300NetworkChaincode) getSpec(stub shim.ChaincodeStubInterface, args 
     return shim.Error("Incorrect number of arguments. Expecting name of the spec to query")
   }
 
-  // ==== Get the spec from chaincode state ====
+  // ==== Get the spec from chaincode state ==== //
   name = args[0]
   valAsbytes, err := stub.GetState(name)
   if err != nil {
@@ -202,7 +196,7 @@ func (t *SCC300NetworkChaincode) getSpec(stub shim.ChaincodeStubInterface, args 
     return shim.Error(jsonResp)
   }
 
-  // ==== Notify listeners that an event "eventInvoke" have been executed (check line 19 in the file invoke.go) ====
+  // ==== Notify listeners that an event "eventInvoke" have been executed (check line 19 in the file invoke.go) ==== //
   err = stub.SetEvent("eventInvoke", []byte{})
   if err != nil {
     return shim.Error(err.Error())
@@ -211,16 +205,77 @@ func (t *SCC300NetworkChaincode) getSpec(stub shim.ChaincodeStubInterface, args 
   return shim.Success(valAsbytes)
 }
 
-// =============================== COMMITMENT API METHODS ================================= //
-//  getCreatedCommitments(stub, args): obtains all created commitments by spec name.
-//  getDetachedCommitments(stub, args): obtains all detached commitments by spec name.
-//  getDischargedCommitments(stub, args): obtains all discharged commitments by spec name.
-//  getExpiredCommitments(stub, args): obtains all expired commitments by spec name.
-//  getViolatedCommitments(stub, args): obtains all violated commitments by spec name.
-// ======================================================================================== //
+// ======================================================================
+// initCommitmentData - adds commitment data to blockchain to be queried.
+// Accepts an array of JSON object strings and adds to CouchDB.
+// ======================================================================
+func (t *SCC300NetworkChaincode) initCommitmentData(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+
+  // ==== Add slice data to database ==== //
+  for _, commitmentDataJSON := range args {
+    commitmentDataJSONBytes := []byte(commitmentDataJSON)
+
+    // ==== Obtain event name from current JSON string ==== //
+    var jsonMap map[string]string
+    json.Unmarshal([]byte(commitmentDataJSON), &jsonMap)
+    eventName := string(jsonMap["docType"])
+    comID := string(jsonMap["comID"])
+
+    // ==== Save commitment to state creating a new instance with an id ==== //
+    err := stub.PutState(eventName + comID, commitmentDataJSONBytes)
+    if err != nil {
+      return shim.Error(err.Error())
+    }
+
+    //  ==== Index the commitment to enable event name-based range queries ==== //
+    indexName := "event"
+    ownerNameIndexKey, err := stub.CreateCompositeKey(indexName, []string{eventName})
+    if err != nil {
+      return shim.Error(err.Error())
+    }
+
+    //  ==== Save index entry to state. Only the key name is needed, no need to store a duplicate copy of the data. ==== //
+    //  ==== Note - passing a 'nil' value will effectively delete the key from state, therefore we pass null character as value. ==== //
+    value := []byte{0x00}
+    stub.PutState(ownerNameIndexKey, value)
+
+    // ==== Data saved and indexed. Return success ==== //
+    fmt.Println("- end init commitment data")
+
+    // ==== Notify listeners that an event "eventInvoke" have been executed (check line 24 in the file invoke.go) ==== //
+    err = stub.SetEvent("eventInvoke", []byte{})
+    if err != nil {
+      return shim.Error(err.Error())
+    }
+  }
+
+  return shim.Success(nil)
+}
+
+// =============================== COMMITMENT API METHODS ======================================== //
+//
+//  getCreatedCommitments(stub, args): obtains all created commitments by commitment name.
+//    - stub: required chaincode interface
+//    - args: slice of strings (args[0]: commitment name)
+//  getDetachedCommitments(stub, args): obtains all detached commitments by commitment name.
+//    - stub: required chaincode interface
+//    - args: slice of strings (args[0]: commitment name, args[1]: false)
+//  getDischargedCommitments(stub, args): obtains all discharged commitments by commitment name.
+//    - stub: required chaincode interface
+//    - args: slice of strings (args[0]: commitment name, args[1]: false)
+//  getExpiredCommitments(stub, args): obtains all expired commitments by commitment name.
+//    - stub: required chaincode interface
+//    - args: slice of strings (args[0]: commitment name, args[1]: true (boolean flag - true to
+//            get expired, false to get detached - this prevents repetition of logic))
+//  getViolatedCommitments(stub, args): obtains all violated commitments by commitment name.
+//    - stub: required chaincode interface
+//    - args: slice of strings (args[0]: commitment name, args[1]: true (boolean flag - true to
+//            get violated, false to get discharged - this prevents repetition of logic))
+//
+// =============================================================================================== //
 
 // =========================== GET CREATED COMMITMENTS ========================
-//  Obtains all created commitments based on a given commitment/spec name.
+//  Obtains all created commitments based on a given commitment name.
 //  A commitment is created if it exists on the blockchain CouchDB database.
 // ============================================================================
 func (t *SCC300NetworkChaincode) getCreatedCommitments(stub shim.ChaincodeStubInterface, args []string) pb.Response {
@@ -232,12 +287,11 @@ func (t *SCC300NetworkChaincode) getCreatedCommitments(stub shim.ChaincodeStubIn
   res := string(response.Payload)
 
   // ==== Unmarshal JSON into structure and obtain source code ==== //
-  com := CommitmentMeta{}
+  com := Spec{}
   json.Unmarshal([]byte(res), &com)
 
-  // ==== Compile specification source to obtain struct ==== //
-  specSource := com.Source
-  spec, _ := compileSpec(specSource)
+  // ==== Compile specification source to obtain go struct ==== //
+  spec, _ := compileSpec(com.Source)
 
   // ==== Format and perform query to get created commitment results ==== //
   query := fmt.Sprintf(GetEventQuery, spec.CreateEvent.Name)
@@ -265,11 +319,9 @@ func (t *SCC300NetworkChaincode) getCreatedCommitments(stub shim.ChaincodeStubIn
      },
    )
   }
-
   // ==== Convert commitments to bytes to send to requester ==== //
   commitmentsBytes, _ := commitmentsToBytes(commitments)
   return shim.Success(commitmentsBytes)
-  // return nil, com, fmt.Errorf("Couldn't get %s created commitments", comName)
 }
 
 // =========================== GET DETACHED COMMITMENTS ======================================
@@ -300,7 +352,7 @@ func (t *SCC300NetworkChaincode) getDetachedCommitments(stub shim.ChaincodeStubI
   res := string(response.Payload)
 
   // ==== Unmarshal JSON into structure and obtain source code ==== //
-  com := CommitmentMeta{}
+  com := Spec{}
   json.Unmarshal([]byte(res), &com)
 
   // ==== Compile specification source to obtain struct ==== //
@@ -398,7 +450,7 @@ func (t *SCC300NetworkChaincode) getDetachedCommitments(stub shim.ChaincodeStubI
 }
 
 // =========================== GET DISCHARGED COMMITMENTS =======================
-//  Obtains all discharged commitments based on a given commitment/spec name
+//  Obtains all discharged commitments based on a given commitment/spec name.
 // ==============================================================================
 func (t *SCC300NetworkChaincode) getDischargedCommitments(stub shim.ChaincodeStubInterface, args []string) pb.Response {
   // ==== Create commitments from responses with data per commitment state ==== //
@@ -422,7 +474,7 @@ func (t *SCC300NetworkChaincode) getDischargedCommitments(stub shim.ChaincodeStu
   res := string(response.Payload)
 
   // ==== Unmarshal JSON into structure and obtain source code ==== //
-  com := CommitmentMeta{}
+  com := Spec{}
   json.Unmarshal([]byte(res), &com)
 
   // ==== Compile specification source to obtain struct ==== //
@@ -527,86 +579,39 @@ func (t *SCC300NetworkChaincode) getDischargedCommitments(stub shim.ChaincodeStu
 }
 
 // =========================== GET EXPIRED COMMITMENTS ======================
-//  Obtains all expired commitments based on a given commitment/spec name
+//  Obtains all expired commitments based on a given commitment/spec name.
 //  This method simply calls getDetachedCommitments() with an extra
-//  boolean flag of 'true' to obtain all the failed detached commitments
+//  boolean flag of 'true' to obtain all the failed detached commitments.
 // ==========================================================================
 func (t *SCC300NetworkChaincode) getExpiredCommitments(stub shim.ChaincodeStubInterface, args []string) pb.Response {
   return t.getDetachedCommitments(stub, args)
 }
 
 // =========================== GET VIOLATED COMMITMENTS ======================
-//  Obtains all violated commitments based on a given commitment/spec name
+//  Obtains all violated commitments based on a given commitment/spec name.
 //  This method simply calls getDischargedCommitments() with an extra
-//  boolean flag of 'true' to obtain all the failed discharged commitments
+//  boolean flag of 'true' to obtain all the failed discharged commitments.
 // ===========================================================================
 func (t *SCC300NetworkChaincode) getViolatedCommitments(stub shim.ChaincodeStubInterface, args []string) pb.Response {
   return t.getDischargedCommitments(stub, args)
 }
 
-// ======================================================================
-// initCommitmentData - adds commitment data to blockchain to be queried.
-// Accepts an array of JSON object strings and adds to CouchDB.
-// ======================================================================
-func (t *SCC300NetworkChaincode) initCommitmentData(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-
-  // === Add slice data to database ===
-  for _, commitmentDataJSON := range args {
-    commitmentDataJSONBytes := []byte(commitmentDataJSON)
-
-    // === Obtain event name from current JSON string ===
-    var jsonMap map[string]string
-    json.Unmarshal([]byte(commitmentDataJSON), &jsonMap)
-    eventName := string(jsonMap["docType"])
-    comID := string(jsonMap["comID"])
-
-    // === Save commitment to state creating a new instance with an id ===
-    err := stub.PutState(eventName + comID, commitmentDataJSONBytes)
-    if err != nil {
-      return shim.Error(err.Error())
-    }
-
-    //  ==== Index the commitment to enable event name-based range queries ====
-    indexName := "event"
-    ownerNameIndexKey, err := stub.CreateCompositeKey(indexName, []string{eventName})
-    if err != nil {
-      return shim.Error(err.Error())
-    }
-
-    //  === Save index entry to state. Only the key name is needed, no need to store a duplicate copy of the data. ===
-    //  === Note - passing a 'nil' value will effectively delete the key from state, therefore we pass null character as value. ===
-    value := []byte{0x00}
-    stub.PutState(ownerNameIndexKey, value)
-
-    // === Data saved and indexed. Return success ===
-    fmt.Println("- end init commitment data")
-
-    // === Notify listeners that an event "eventInvoke" have been executed (check line 24 in the file invoke.go) ===
-    err = stub.SetEvent("eventInvoke", []byte{})
-    if err != nil {
-      return shim.Error(err.Error())
-    }
-  }
-
-  return shim.Success(nil)
-}
-
-// =========================================================================================
+// ===============================================================================
 // richQuery - uses a query string to perform a query for commitments.
 //
 // Query string matching state database syntax is passed in and executed as is.
 // Supports ad hoc queries that can be defined at runtime by the client.
 // Only available on state databases that support rich query (e.g. CouchDB).
 // The first argument in the args list is the query string.
-// =========================================================================================
+// ===============================================================================
 func (t *SCC300NetworkChaincode) richQuery(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 
-  // ==== Input sanitation =====
+  // ==== Input sanitation ===== //
   if len(args) < 1 {
     return shim.Error("Incorrect number of arguments. Expecting 1")
   }
 
-  // ==== Obtain query results ====
+  // ==== Obtain query results ==== //
   queryString := args[0]
   queryResults, err := getQueryResultForQueryString(stub, queryString)
   if err != nil {
@@ -615,20 +620,20 @@ func (t *SCC300NetworkChaincode) richQuery(stub shim.ChaincodeStubInterface, arg
   return shim.Success(queryResults)
 }
 
-// =========================================================================================
+// =================================================================================
 // getQueryResultForQueryString - executes the passed in query string.
 // Result set is built and returned as a byte array containing the JSON results.
-// =========================================================================================
+// =================================================================================
 func getQueryResultForQueryString(stub shim.ChaincodeStubInterface, queryString string) ([]byte, error) {
 
-  // ==== Obtain query result ====
+  // ==== Obtain query result ==== //
   resultsIterator, err := stub.GetQueryResult(queryString)
   if err != nil {
     return nil, err
   }
   defer resultsIterator.Close()
 
-  // ==== Construct query response ====
+  // ==== Construct query response ==== //
   buffer, err := constructQueryResponseFromIterator(resultsIterator)
   if err != nil {
     return nil, err
@@ -637,13 +642,13 @@ func getQueryResultForQueryString(stub shim.ChaincodeStubInterface, queryString 
   return buffer.Bytes(), nil
 }
 
-// ===========================================================================================
+// ============================================================================================
 // constructQueryResponseFromIterator - constructs a JSON array containing query results from
 // a given result iterator.
-// ===========================================================================================
+// ============================================================================================
 func constructQueryResponseFromIterator(resultsIterator shim.StateQueryIteratorInterface) (*bytes.Buffer, error) {
 
-  // ==== Buffer is a JSON array containing QueryResults ====
+  // ==== Buffer is a JSON array containing QueryResults ==== //
   var buffer bytes.Buffer
   buffer.WriteString("[")
 
@@ -653,7 +658,7 @@ func constructQueryResponseFromIterator(resultsIterator shim.StateQueryIteratorI
     if err != nil {
       return nil, err
     }
-    // ==== Add a comma before array members, suppress it for the first array member ====
+    // ==== Add a comma before array members, suppress it for the first array member ==== //
     if bArrayMemberAlreadyWritten == true {
       buffer.WriteString(",")
     }
@@ -663,7 +668,7 @@ func constructQueryResponseFromIterator(resultsIterator shim.StateQueryIteratorI
     buffer.WriteString("\"")
 
     buffer.WriteString(", \"Record\":")
-    // ==== Record is a JSON object, so we write as-is ====
+    // ==== Record is a JSON object, so we write as-is ==== //
     buffer.WriteString(string(queryResponse.Value))
     buffer.WriteString("}")
     bArrayMemberAlreadyWritten = true
@@ -673,9 +678,9 @@ func constructQueryResponseFromIterator(resultsIterator shim.StateQueryIteratorI
   return &buffer, nil
 }
 
-// ==================================================================
-// compileSpec - compiles a specification source code to a go struct
-// ==================================================================
+// ======================================================================
+// compileSpec - compiles a specification source code into a go struct.
+// ======================================================================
 func compileSpec(source string) (res *q.Spec, err error) {
   spec, err := q.Parse(source)
   if (err != nil) {
@@ -687,7 +692,7 @@ func compileSpec(source string) (res *q.Spec, err error) {
 }
 
 // ======================================================================================
-// isDateWithinDeadline - perform Go time arithmetic on dates with specified deadline 
+// isDateWithinDeadline - perform Go time arithmetic on dates with specified deadline.
 // (e.g. deadline=5 means payment must occur within 5 days of the offer being created)
 // ======================================================================================
 func isDateWithinDeadline(date1 string, date2 string, deadline float64) (within bool) {
@@ -702,9 +707,9 @@ func isDateWithinDeadline(date1 string, date2 string, deadline float64) (within 
   }
 }
 
-// ====================================================================
-// getDeadline - obtains the deadline value from the list of arguments
-// ====================================================================
+// ======================================================================
+// getDeadline - obtains the deadline value from the list of arguments.
+// ======================================================================
 func getDeadline(args []q.Arg) (res float64) {
   deadline := -1.0
   for _, arg := range args {
@@ -716,7 +721,7 @@ func getDeadline(args []q.Arg) (res float64) {
 }
 
 // =============================================================================
-// commitmentsToBytes - converts a slice of commitment structs to a byte array
+// commitmentsToBytes - converts a slice of commitment structs to a byte array.
 // =============================================================================
 func commitmentsToBytes(commitments []Commitment) (res []byte, err error) {
   buf := new(bytes.Buffer)
@@ -732,7 +737,7 @@ func commitmentsToBytes(commitments []Commitment) (res []byte, err error) {
 }
 
 // ==================================================================
-// main - start the chaincode and make it ready for future requests
+// main - start the chaincode and make it ready for future requests.
 // ==================================================================
 func main() {
   err := shim.Start(new(SCC300NetworkChaincode))
