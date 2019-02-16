@@ -97,14 +97,20 @@
   },
   {
     "docType": "BookPay",
+    "comID": "67e302fd-bff3-4054-8e44-26294fb4ff73",
+    "amount": "12.99",
+    "date": "Wed Dec 19 15:24:18 2018"
+  },
+  {
+    "docType": "BookPay",
     "comID": "21d302fd-bff3-4054-8e44-26294fb4ff73",
     "amount": "8.99",
     "date": "Fri Feb 15 20:00:00 2018"
   },
   {
-    "docType": "BookPay",
+    "docType": "DeliverBook",
     "comID": "67e302fd-bff3-4054-8e44-26294fb4ff73",
-    "amount": "12.99",
-    "date": "Wed Dec 19 15:24:18 2018"
+    "library": "Poulton Library",
+    "date": "Thu Dec 20 11:47:00 2018"
   }
 ]
