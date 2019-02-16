@@ -15,7 +15,7 @@ import (
 )
 
 const (
-  GetEventQuery = "{\"selector\":{\"docType\":\"%s\"}}"
+  GetEventQuery = "{\"selector\":{\"docType\":\"%s\"}}"  // Obtains all event data based on docType
 
   GreenTick = "\033[92m" + "\u2713" + "\033[0m"
   TimeFormat = "Mon Jan _2 15:04:05 2006"

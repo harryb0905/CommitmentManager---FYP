@@ -5,7 +5,8 @@ import (
 	// q "github.com/chainHero/heroes-service/quark"
 )
 
-func (app *Application) EditorHandler(w http.ResponseWriter, r *http.Request) {
+// Handler to manage the merchant page
+func (app *Application) MerchantHandler(w http.ResponseWriter, r *http.Request) {
 	data := &struct {
 		TransactionId string
 		Success       bool
@@ -15,5 +16,5 @@ func (app *Application) EditorHandler(w http.ResponseWriter, r *http.Request) {
 		Success:       false,
 		Response:      false,
 	}
-	renderTemplate(w, r, "editor.html", data)
+	renderTemplate(w, r, "home.html", data)
 }

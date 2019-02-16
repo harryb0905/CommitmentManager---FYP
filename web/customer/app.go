@@ -6,14 +6,9 @@ import (
   "github.com/scc300/scc300-network/web/controllers"
 )
 
+// Creates a new web server for the customer application
 func Serve(app *controllers.Application) {
-  http.HandleFunc("/home.html", app.HomeHandler)
-  http.HandleFunc("/editor.html", app.EditorHandler)
-
-  http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-    http.Redirect(w, r, "/home.html", http.StatusTemporaryRedirect)
-  })
-
+  http.HandleFunc("/customer", app.HomeHandler)
   fmt.Println("Customer application listening (http://localhost:3000/) ...")
   http.ListenAndServe(":3000", nil)
 }

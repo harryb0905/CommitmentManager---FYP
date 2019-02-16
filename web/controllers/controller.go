@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 )
 
+// Renders a given template on the web server
 func renderTemplate(w http.ResponseWriter, r *http.Request, templateName string, data interface{}) {
 	lp := filepath.Join("web", "templates", "layout.html")
 	tp := filepath.Join("web", "templates", templateName)

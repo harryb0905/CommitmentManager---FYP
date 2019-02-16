@@ -7,6 +7,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 )
 
+// Mapping of commitment state to commitment query functions
 var comStateFunctions = map[string]interface{}{
   "created": "getCreatedCommitments",
   "detached": "getDetachedCommitments",
@@ -15,27 +16,30 @@ var comStateFunctions = map[string]interface{}{
   "violated": "getViolatedCommitments",
 }
 
+// Represents a single commitment with an ID and slice of states
 type Commitment struct {
   ComID    string
   States []ComState
 }
 
+// Represents a single commitment state - each has a name and a map of data associated with that state
 type ComState struct {
   Name  string
   Data  map[string]interface{}
 }
 
-type CommitmentMeta struct {
-  Name     string  `json:"name"`
-  Source   string  `json:"source"`
-  Summary  string  `json:"summary"`
+// A commitment specification
+type Spec struct {
+  ObjectType  string `json:"docType"`  // docType - used to distinguish the various types of objects in state database
+  Name        string `json:"name"`     // Spec name - the name of the specification
+  Source      string `json:"source"`   // Source - string to store spec source code (.quark file)
 }
 
 // GetSpec - query the chaincode to get the state of a spec
-func (setup *FabricSetup) GetSpec(name string) (res *CommitmentMeta, err error) {
+func (setup *FabricSetup) GetSpec(name string) (res *Spec, err error) {
 
   // Prepare results
-  com := &CommitmentMeta{}
+  com := &Spec{}
 
   // Prepare arguments
   var args []string

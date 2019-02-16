@@ -13,7 +13,9 @@ import (
   "github.com/scc300/scc300-network/web/controllers"
 )
 
+// Blockchain initialization and start customer and merchant web applications
 func main() {
+  
 	// Definition of the Fabric SDK properties
 	fSetup := blockchain.FabricSetup{
 		// Network parameters
@@ -73,9 +75,11 @@ func main() {
   }
 
 	// Launch the customer web application
-	customer.Serve(&controllers.Application{
-    Fabric: &fSetup,
-  })
+  go func() {
+  	customer.Serve(&controllers.Application{
+      Fabric: &fSetup,
+    })
+  }()
 
   // Launch the merchant web application
   merchant.Serve(&controllers.Application{

@@ -208,7 +208,6 @@ func (p *Parser) scan() (tok Token, lit string) {
 
   // Save it to the buffer in case we unscan later.
   p.buf.tok, p.buf.lit = tok, lit
-
   return
 }
 
