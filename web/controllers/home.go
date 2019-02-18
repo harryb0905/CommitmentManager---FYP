@@ -30,7 +30,7 @@ type Application struct {
 }
 
 // Handler to manage the home page
-func (app *Application) HomeHandler(w http.ResponseWriter, r *http.Request) {
+func (app *Application) MerchantHandler(w http.ResponseWriter, r *http.Request) {
 	data := &struct {
 		SpecName       		string
     ComState          string
@@ -57,7 +57,7 @@ func (app *Application) HomeHandler(w http.ResponseWriter, r *http.Request) {
 		var commitments []blockchain.Commitment
     var err error
     
-    spec, er := fab.GetSpec(data.SpecName) // er - could'nt get spec
+    spec, er := fab.GetSpec(data.SpecName)
     if er != nil {
       data.Failed = true
     } else {
