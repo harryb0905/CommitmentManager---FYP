@@ -5,7 +5,7 @@ import (
   "io"
 )
 
-// Spec represents a contract specification
+// Spec represents a commitment specification
 type Spec struct {
   Constraint     *Constraint
   CreateEvent    *Event
