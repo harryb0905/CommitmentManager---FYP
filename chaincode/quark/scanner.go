@@ -93,7 +93,7 @@ func (s *Scanner) scanIdent() (tok Token, lit string) {
 
    // If the string matches a keyword then return that keyword.
   switch strings.ToUpper(buf.String()) {
-  case "SPEC":
+    case "SPEC":
       return SPEC, buf.String()
     case "TO":
       return TO, buf.String()

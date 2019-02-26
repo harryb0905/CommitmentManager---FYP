@@ -1,6 +1,6 @@
 package quark
 
-// Token represents a lexical token.
+// Token represents a lexical token
 type Token int
 
 const (
@@ -10,11 +10,9 @@ const (
   WS
 
   // Literals
-  IDENT // main
+  IDENT
 
   // Misc characters
-  LBRACE   // {
-  RBRACE   // }
   LBRACKET // [
   RBRACKET // ]
   EQUALS   // =

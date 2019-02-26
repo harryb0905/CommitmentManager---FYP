@@ -16,7 +16,7 @@ type Spec struct {
 // A constraint consists of the spec name and who is involved (debtor + creditor)
 type Constraint struct {
   Name      string
-  Debter    string
+  Debtor    string
   Creditor  string
 }
 
@@ -66,11 +66,11 @@ func (p *Parser) Parse() (*Spec, error) {
     return nil, fmt.Errorf("found %q, expected specification name", lit)
   }
 
-  // Get Debter/From name
+  // Get Debtor/From identifier
   if tok, lit := p.scanIgnoreWhitespace(); tok == IDENT {
-    com.Constraint.Debter = lit
+    com.Constraint.Debtor = lit
   } else {
-    return nil, fmt.Errorf("found %q, expected debter name", lit)
+    return nil, fmt.Errorf("found %q, expected debtor identifier", lit)
   }
 
   // Next we should see the "TO" keyword.
@@ -78,11 +78,11 @@ func (p *Parser) Parse() (*Spec, error) {
     return nil, fmt.Errorf("found %q, expected 'to'", lit)
   }
 
-  // Get Creditor/To name
+  // Get Creditor/To identifier
   if tok, lit := p.scanIgnoreWhitespace(); tok == IDENT {
     com.Constraint.Creditor = lit
   } else {
-    return nil, fmt.Errorf("found %q, expected creditor name", lit)
+    return nil, fmt.Errorf("found %q, expected creditor identifier", lit)
   }
 
   // Obtain 'create' statement + args
