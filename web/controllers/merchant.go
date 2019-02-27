@@ -1,10 +1,16 @@
 package controllers
 
 import (
-  "fmt"
+  "time"
+  "encoding/json"
 	"net/http"
   "html/template"
+  "github.com/satori/go.uuid"
   q "github.com/scc300/scc300-network/chaincode/quark"
+)
+
+const (
+  TimeFormat = "Mon Jan _2 15:04:05 2006"
 )
 
 // Handler to manage the merchant application
@@ -39,14 +45,24 @@ func (app *Application) MerchantHandler(w http.ResponseWriter, r *http.Request) 
       data.Response = true
     }
   } else if r.FormValue("submitted-data") == "true" {
+    debtor := r.FormValue("debtor")
+    creditor := r.FormValue("creditor")
     item := r.FormValue("item")
-    // fmt.Println("Item: " + item)
+    price := r.FormValue("price")
+    quality := r.FormValue("quality")
 
-    // jsonStrs := make([]string, 0)
-
-    // jsonStrs = append(jsonStrs, item)
-
-    // fab.InvokeInitCommitmentData(jsonStrs)
+    dataMap := map[string]string{
+      "docType": "Offer", 
+      "comID": uuid.NewV4().String(),
+      "debtor": debtor,
+      "creditor": creditor,
+      "item": item, 
+      "price": price, 
+      "quality": quality,
+      "date": time.Now().Format(TimeFormat),
+    }
+    jsonMap, _ := json.Marshal(dataMap)
+    fab.InvokeInitCommitmentData([]string{string(jsonMap)})
   }
 	renderTemplate(w, r, "merchant.html", data)
 }
