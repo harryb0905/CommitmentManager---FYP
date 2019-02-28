@@ -7,8 +7,9 @@ import (
   "encoding/json"
   "reflect"
   "log"
+
 	"github.com/scc300/scc300-network/blockchain"
-	"github.com/scc300/scc300-network/web/customer"
+  "github.com/scc300/scc300-network/web/customer"
   "github.com/scc300/scc300-network/web/merchant"
   "github.com/scc300/scc300-network/web/controllers"
 )
@@ -74,9 +75,9 @@ func main() {
     log.Fatalf("Unable to initialise commitment data on the chaincode: %v\n", err)
   }
 
-	// Launch the customer web application
+  // Launch the customer web application
   go func() {
-  	customer.Serve(&controllers.Application{
+    customer.Serve(&controllers.Application{
       Fabric: &fSetup,
     })
   }()
