@@ -144,17 +144,15 @@
           <div id="spec-meta-wrapper" class="uk-margin-remove">
             {{ if (not .Failed) }}
               <div>
-                <h4 class="uk-text uk-text-medium">{{ .SpecName }} Spec:</h4>
                 <div id="spec-summary">
                   <pre>{{ $source }}</pre>
                   <hr />
                 </div>
               </div>
               <div id="commitment-data-wrapper">
-                <h4 class="uk-text uk-text-medium">Add Data:</h4> 
                 <form enctype="multipart/form-data" action="#" method="post">
-                    <input type="file" name="uploadfile" />           
-                    <input type="submit" value="upload file" />
+                  <input type="file" name="uploadfile" />           
+                  <input type="submit" value="upload file" />
                 </form>
                 <form class="uk-margin">
                   <div class="uk-form-controls">
