@@ -12,6 +12,7 @@ import (
 func renderTemplate(w http.ResponseWriter, r *http.Request, templateName string, data interface{}) {
 	lp := filepath.Join("web", "templates", "layout.html")
 	tp := filepath.Join("web", "templates", templateName)
+  sub := filepath.Join("web", "templates", "content.html")
 
 	// Return a 404 if the template doesn't exist
 	info, err := os.Stat(tp)
@@ -28,7 +29,7 @@ func renderTemplate(w http.ResponseWriter, r *http.Request, templateName string,
 		return
 	}
 
-	resultTemplate, err := template.ParseFiles(tp, lp)
+	resultTemplate, err := template.ParseFiles(tp, lp, sub)
 	if err != nil {
 		// Log the detailed error
 		fmt.Println(err.Error())

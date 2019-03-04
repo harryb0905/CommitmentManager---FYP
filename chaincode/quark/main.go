@@ -4,7 +4,7 @@ import (
 	"strings"
 )
 
-// Parses a .quark spec file and returns a parsed spec as a go struct
+// Parses a commitment specification and returns a parsed spec as a Go Struct
 func Parse(comSpec string) (spec *Spec, err error) {
   if spec, err := NewParser(strings.NewReader(comSpec)).Parse(); err != nil {
     return nil, err

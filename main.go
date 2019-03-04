@@ -9,8 +9,7 @@ import (
   "log"
 
 	"github.com/scc300/scc300-network/blockchain"
-  "github.com/scc300/scc300-network/web/customer"
-  "github.com/scc300/scc300-network/web/merchant"
+  "github.com/scc300/scc300-network/web"
   "github.com/scc300/scc300-network/web/controllers"
 )
 
@@ -76,14 +75,19 @@ func main() {
   }
 
   // Launch the customer web application
-  go func() {
-    customer.Serve(&controllers.Application{
-      Fabric: &fSetup,
-    })
-  }()
+  // go func() {
+  //   customer.Serve(&controllers.Application{
+  //     Fabric: &fSetup,
+  //   })
+  // }()
 
-  // Launch the merchant web application
-  merchant.Serve(&controllers.Application{
+  // // Launch the merchant web application
+  // merchant.Serve(&controllers.Application{
+  //   Fabric: &fSetup,
+  // })
+
+  // Create 2 servers - 1 merchant, 1 customer
+  web.StartServers(&controllers.Application{
     Fabric: &fSetup,
   })
 }

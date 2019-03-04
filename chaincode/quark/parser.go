@@ -13,20 +13,20 @@ type Spec struct {
   DischargeEvent *Event
 }
 
-// A constraint consists of the spec name and who is involved (debtor + creditor)
+// Constraint consists of spec name and debtor + creditor names
 type Constraint struct {
   Name      string
   Debtor    string
   Creditor  string
 }
 
-// An event (such as Offer, Pay) + argument list
+// An event (with a name such as Offer, Pay) + argument list
 type Event struct {
-  Name      string
-  Args      []Arg
+  Name   string
+  Args   []Arg
 }
 
-// Data field inside the event paramater list
+// Data field inside the event argument list
 type Arg struct {
   Name   string
   Value  string
@@ -123,7 +123,7 @@ func NewEvent(evname Token, event *Event, p *Parser) (error) {
       return fmt.Errorf("found %q, expected event name for '%s'", lit_ev, evname)
     }
   } else {
-    return fmt.Errorf("found %q, expected EVENT", lit)
+    return fmt.Errorf("found %q, expected create/detach/discharge", lit)
   }
   // Get arguments (optional) for event fields
   if err := GetArgs(event, p); err != nil {
