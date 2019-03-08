@@ -32,15 +32,14 @@
           </div>
           <hr />
         </form>
+        {{ if ne (len $source) 0 }}
+          <button class="uk-button uk-button-primary" uk-toggle="target: #addCreateEvent" type="submit">Add Commitment</button>
+        {{ end }}
+        <br /><br />
         <div id="commitments">
           {{ if and (not .Failed) (ne .NumComs 0) }}
             <div>
-              <form>
-                <div>
-                  <h4 class="uk-text uk-text-medium">{{ .NumComs }} {{ .ComState }} {{ .SpecName }} commitment(s) found:</h4>
-                  <button class="uk-button uk-button-primary" uk-toggle="target: #addCreateEvent" type="submit">Add Commitment</button>
-                </div>
-              </form>
+              <h4 class="uk-text uk-text-medium">{{ .NumComs }} {{ .ComState }} {{ .SpecName }} commitment(s) found:</h4>
               <table class="uk-table uk-table-hover uk-table-divider uk-table-striped">
                 <thead>
                   <tr>
@@ -91,7 +90,7 @@
                             {{ $detachedData := (index $value.States 1).Data }}
                             {{ if eq (len $detachedData) 0 }}
                               <span style="font-style: italic;">No Detach Event Data</span><br />
-                              <button class="uk-button uk-button-link" style="text-transform: capitalize;" uk-toggle="target: #adddata">Add Data</button>
+                              <button class="uk-button uk-button-link" style="text-transform: capitalize;" uk-toggle="target: #{{ $createdData.debtor}}">Add Data</button>
                             {{ else }}
                               Detach Event Data: { <br />
                                 {{ range $key, $item := $detachedData }}
@@ -140,19 +139,18 @@
                             <input class="uk-input uk-margin-small" type="text" id="creditor" name="creditor" placeholder="Enter creditor...">
                             {{ range $key, $item := $parsedSpec.CreateEvent.Args }}
                               {{ $argName := $item.Name }}
-         
+
                               <input class="uk-input uk-margin-small" type="text" id="{{ $argName }}" name="{{ $argName }}" placeholder="Enter {{ $argName }}...">
-                              <input type="hidden" name="event" value="{{ $parsedSpec.CreateEvent.Name }}">
                             {{ end }}
+                            <input type="hidden" name="docType" value="{{ $parsedSpec.CreateEvent.Name }}">
                             <input type="hidden" name="submitted-commitment" value="true">
-                            <input type="hidden" name="comID" value="{{ $createdData.comID }}">
                             <button class="uk-button uk-button-primary uk-width-1-1 uk-margin-small" type="submit">Submit</button>
                           </form>
                         </div>
                       </div>
                     </div>
                     <!-- Add Data Modal Content -->
-                    <div id="adddata" uk-modal>
+                    <div id="{{ $createdData.debtor }}" uk-modal>
                       <div class="uk-modal-dialog">
                         <button class="uk-modal-close-default" type="button" uk-close></button>
                         <div class="uk-modal-header">
@@ -181,9 +179,9 @@
                                           {{ $argName := $item.Name }}
                                           {{ if ne $argName "deadline" }}
                                             <input class="uk-input uk-margin-small" type="text" id="{{ $argName }}" name="{{ $argName }}" placeholder="Enter {{ $argName }}...">
-                                            <input type="hidden" name="event" value="{{ $parsedSpec.DetachEvent.Name }}">
                                           {{ end }}
                                         {{ end }}
+                                        <input type="hidden" name="docType" value="{{ $parsedSpec.DetachEvent.Name }}">
                                         <input type="hidden" name="submitted-data" value="true">
                                         <input type="hidden" name="comID" value="{{ $createdData.comID }}">
                                         <button class="uk-button uk-button-primary uk-width-1-1 uk-margin-small" type="submit">Submit</button>
@@ -195,9 +193,9 @@
                                           {{ $argName := $item.Name }}
                                           {{ if ne $argName "deadline" }}
                                             <input class="uk-input uk-margin-small" type="text" id="{{ $argName }}" name="{{ $argName }}" placeholder="Enter {{ $argName }}...">
-                                            <input type="hidden" name="event" value="{{ $parsedSpec.DischargeEvent.Name }}">
                                           {{ end }}
                                         {{ end }}
+                                        <input type="hidden" name="docType" value="{{ $parsedSpec.DischargeEvent.Name }}">
                                         <input type="hidden" name="submitted-data" value="true">
                                         <input type="hidden" name="comID" value="{{ $createdData.comID }}">
                                         <button class="uk-button uk-button-primary uk-width-1-1 uk-margin-small" type="submit">Submit</button>

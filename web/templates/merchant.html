@@ -28,15 +28,15 @@
         </div>
       </div>
     </div>
-    {{ if .Failed }}
+    {{ if .CompilationFail }}
+      <div class="uk-alert-danger" uk-alert>
+        <a class="uk-alert-close" uk-close></a>
+        <p>Error compiling commitment specification.<br />Syntax Error: {{ .CompilationMsg }}</p>
+      </div>
+    {{ else if .Failed }}
       <div class="uk-alert-danger" uk-alert>
         <a class="uk-alert-close" uk-close></a>
         <p>{{ .FailMsg }}</p>
-      </div>
-    {{ else if .CompilationFail }}
-      <div class="uk-alert-danger" uk-alert>
-        <a class="uk-alert-close" uk-close></a>
-        <p>Error compiling commitment specification</p>
       </div>
     {{ end }}
   </div>

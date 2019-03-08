@@ -210,6 +210,7 @@ func (t *SCC300NetworkChaincode) getSpec(stub shim.ChaincodeStubInterface, args 
 // Accepts an array of JSON object strings and adds to CouchDB.
 // ======================================================================
 func (t *SCC300NetworkChaincode) initCommitmentData(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+  fmt.Println("- start init commitment data")
 
   // ==== Add slice data to database ==== //
   for _, commitmentDataJSON := range args {
@@ -382,7 +383,7 @@ func (t *SCC300NetworkChaincode) getDetachedCommitments(stub shim.ChaincodeStubI
   // ==== If detach event record exists and that timestamp is within a period of x days or less from offer being created, this commitment is detached ==== //
   for _, createdCom := range createdComs {
     for _, comRes := range responses {
-    // ==== Get created commitment that corresponds to this detached commitment ==== //
+      // ==== Get created commitment that corresponds to this detached commitment ==== //
       if (createdCom.ComID == comRes.Record["comID"].(string)) {
         hasDetachedEvent = true
         // ==== Extract date for checking deadline ==== //
@@ -391,7 +392,7 @@ func (t *SCC300NetworkChaincode) getDetachedCommitments(stub shim.ChaincodeStubI
 
         // ==== If detached event date is within specified deadline, include in results ==== //
         withinDeadline := isDateWithinDeadline(createdDateStr, detachedDateStr, deadline)
-        if ((withinDeadline && !wantExpired) || (!withinDeadline && wantExpired)) {
+        if ((withinDeadline && !wantExpired) || (wantExpired && !withinDeadline)) {
           commitments = append(commitments,
             Commitment{
               ComID: createdCom.ComID,
@@ -414,12 +415,10 @@ func (t *SCC300NetworkChaincode) getDetachedCommitments(stub shim.ChaincodeStubI
     }
 
     // ==== Edge case where create event exists but detach event doesn't ==== //
-    // ==== (i.e. use todays date to determine if it should be detached ==== //
     if (!hasDetachedEvent) {
-
       // ==== Extract dates for checking deadline ==== //
       createdDateStr := createdCom.States[0].Data["date"].(string)
-      todayStr := time.Now().String()
+      todayStr := time.Now().Format(TimeFormat)
 
       // ==== If detach event date is within specified deadline, include in results ==== //
       withinDeadline := isDateWithinDeadline(createdDateStr, todayStr, deadline)
@@ -540,7 +539,6 @@ func (t *SCC300NetworkChaincode) getDischargedCommitments(stub shim.ChaincodeStu
     }
 
     // ==== Edge case where detach event exists but discharge event doesn't ==== //
-    // ==== (i.e. use todays date to determine if it should be discharged ==== //
     if (!hasDischargedEvent) {
 
       // ==== Extract dates for checking deadline ==== //
@@ -686,7 +684,7 @@ func compileSpec(source string) (res *q.Spec, err error) {
   if (err != nil) {
     log.Fatal("\nSyntax Error:\n", err, "\n")
   } else {
-    fmt.Printf("\n%s spec compiled successfully %s \n\n", spec.Constraint.Name, GreenTick)
+    fmt.Printf("\n%s spec compiled successfully %s \n", spec.Constraint.Name, GreenTick)
   }
   return spec, err
 }
@@ -696,9 +694,9 @@ func compileSpec(source string) (res *q.Spec, err error) {
 // (e.g. deadline=5 means payment must occur within 5 days of the offer being created)
 // ======================================================================================
 func isDateWithinDeadline(date1 string, date2 string, deadline float64) (within bool) {
-  createEventDate, _ := time.Parse(TimeFormat, date1)
-  detachEventDate, _ := time.Parse(TimeFormat, date2)
-  daysDiff := float64(detachEventDate.Sub(createEventDate).Hours() / 24)
+  parsedDate1, _ := time.Parse(TimeFormat, date1)
+  parsedDate2, _ := time.Parse(TimeFormat, date2)
+  daysDiff := float64((parsedDate2.Sub(parsedDate1)).Hours() / 24)
 
   if (math.Abs(daysDiff) >= deadline) {
     return false

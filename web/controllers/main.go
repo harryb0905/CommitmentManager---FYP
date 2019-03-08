@@ -131,7 +131,7 @@ func (app *Application) MainHandler(data *Data, w http.ResponseWriter, r *http.R
     r.ParseForm()
 
     dataMap := map[string]string{
-      "docType": r.FormValue("event"),
+      "docType": r.FormValue("docType"),
       "comID": r.FormValue("comID"),
       "date": time.Now().Format(TimeFormat),
     }

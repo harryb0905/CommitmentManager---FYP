@@ -37,7 +37,7 @@
     "item": "Pen",
     "price": "1.99",
     "quality": "Great",
-    "date": "Wed Dec 19 12:00:00 2018"
+    "date": "Fri Mar 8 12:00:00 2019"
   },
   {
     "docType": "Pay",
@@ -74,43 +74,5 @@
     "comID": "23fa61a0-6b32-4e38-93d4-08e5128e8036",
     "courier": "DPD",
     "date": "Mon Dec 31 20:00:00 2018"
-  },
-  {
-    "docType": "BookOffer",
-    "comID": "21d302fd-bff3-4054-8e44-26294fb4ff73",
-    "debtor": "Alan",
-    "creditor": "Toby",
-    "bookname": "Harry Potter and the Chamber of Secrets",
-    "author": "J.K. Rowling",
-    "ISBN": "238772541023",
-    "date": "Mon Dec 17 18:00:00 2018"
-  },
-  {
-    "docType": "BookOffer",
-    "comID": "67e302fd-bff3-4054-8e44-26294fb4ff73",
-    "debtor": "Harry",
-    "creditor": "Joe",
-    "bookname": "Steve Jobs Autobiography",
-    "author": "Walter Isaacson",
-    "ISBN": "981209128712",
-    "date": "Mon Dec 17 18:00:00 2018"
-  },
-  {
-    "docType": "BookPay",
-    "comID": "67e302fd-bff3-4054-8e44-26294fb4ff73",
-    "amount": "12.99",
-    "date": "Wed Dec 19 15:24:18 2018"
-  },
-  {
-    "docType": "BookPay",
-    "comID": "21d302fd-bff3-4054-8e44-26294fb4ff73",
-    "amount": "8.99",
-    "date": "Fri Feb 15 20:00:00 2018"
-  },
-  {
-    "docType": "DeliverBook",
-    "comID": "67e302fd-bff3-4054-8e44-26294fb4ff73",
-    "library": "Poulton Library",
-    "date": "Thu Dec 20 11:47:00 2018"
   }
 ]
