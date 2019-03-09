@@ -90,7 +90,7 @@
                             {{ $detachedData := (index $value.States 1).Data }}
                             {{ if eq (len $detachedData) 0 }}
                               <span style="font-style: italic;">No Detach Event Data</span><br />
-                              <button class="uk-button uk-button-link" style="text-transform: capitalize;" uk-toggle="target: #{{ $createdData.debtor}}">Add Data</button>
+                              <button class="uk-button uk-button-link" style="text-transform: capitalize;" uk-toggle="target: #{{ $createdData.creditor}}">Add Data</button>
                             {{ else }}
                               Detach Event Data: { <br />
                                 {{ range $key, $item := $detachedData }}
@@ -150,7 +150,7 @@
                       </div>
                     </div>
                     <!-- Add Data Modal Content -->
-                    <div id="{{ $createdData.debtor }}" uk-modal>
+                    <div id="{{ $createdData.creditor }}" uk-modal>
                       <div class="uk-modal-dialog">
                         <button class="uk-modal-close-default" type="button" uk-close></button>
                         <div class="uk-modal-header">

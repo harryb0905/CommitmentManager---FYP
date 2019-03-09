@@ -543,7 +543,7 @@ func (t *SCC300NetworkChaincode) getDischargedCommitments(stub shim.ChaincodeStu
 
       // ==== Extract dates for checking deadline ==== //
       detachedDateStr := detachedCom.States[1].Data["date"].(string)
-      todayStr := time.Now().String()
+      todayStr := time.Now().Format(TimeFormat)
 
       // ==== If discharge event date is within specified deadline, include in results ==== //
       withinDeadline := isDateWithinDeadline(detachedDateStr, todayStr, deadline)

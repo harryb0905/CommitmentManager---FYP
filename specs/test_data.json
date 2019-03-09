@@ -49,14 +49,6 @@
   },
   {
     "docType": "Pay",
-    "comID": "23fa61a0-6b32-4e38-93d4-08e5128e8036",
-    "amount": "29.99",
-    "address": "87 Hardhorn Road",
-    "shippingtype": "Nominated Day Delivery",
-    "date": "Sun Dec 23 12:25:00 2018"
-  },
-  {
-    "docType": "Pay",
     "comID": "c0e4116d-6236-41d9-864c-2f816ba4d75e",
     "amount": "9.99",
     "address": "20 The Road",
@@ -68,11 +60,5 @@
     "comID": "48c304fd-bff3-4054-8e44-26994fb4ff73",
     "courier": "Parcel Force",
     "date": "Mon Dec 24 20:00:00 2018"
-  },
-  {
-    "docType": "Delivery",
-    "comID": "23fa61a0-6b32-4e38-93d4-08e5128e8036",
-    "courier": "DPD",
-    "date": "Mon Dec 31 20:00:00 2018"
   }
 ]
