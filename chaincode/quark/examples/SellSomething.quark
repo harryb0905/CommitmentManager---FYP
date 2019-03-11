@@ -1,0 +1,4 @@
+spec SellSomething dID to cID
+  create BookOffer [bookname,author,ISBN]
+  detach BookPay [amount] deadline=25
+  discharge DeliverBook [libraryname] deadline=3

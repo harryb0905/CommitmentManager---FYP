@@ -41,9 +41,9 @@ spec SPEC_NAME DEBTOR to CREDITOR
 | EVENT     | The name of the event (akin to relations in SQL).  | Offer, Pay, Delivery                       |
 | --------- | -------------------------------------------------- | ------------------------------------------ |
 | ARG_LIST  | The list of arguments associated with the event.   | [item,price],                              |
-|           |                                                    | [address,shippingtype,deadline]            |
+|           |                                                    | [address,shippingtype]            |
 | --------- | -------------------------------------------------- | ------------------------------------------ |
-| deadline  | The date by which this event should occur.         | detach EVENT [ARG_LIST, deadline=10]       |
+| deadline  | The date by which this event should occur.         | detach EVENT [ARG_LIST] deadline=10      |
 |           | (i.e. no. of days (as an integer) after the        | (i.e. event will be detached if this event |
 |           | previous event occured = deadline date).           | occurs within CREATE_EVENT_DATE+10 days,   |
 |           |                                                    | otherwise the commitment expires)          |

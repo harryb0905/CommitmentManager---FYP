@@ -5,7 +5,8 @@ import (
   "github.com/scc300/scc300-network/web/controllers"
 )
 
-// Create 2 servers using a channel - 1 merchant, 1 customer
+// Create 2 servers using a channel
+// 2 apps; merchant app and customer app (listening on different ports)
 func StartServers(app *controllers.Application) {
   finish := make(chan bool)
   

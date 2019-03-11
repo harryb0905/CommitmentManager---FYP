@@ -67,18 +67,6 @@ func main() {
     log.Fatalf("Unable to initialise commitment data on the chaincode: %v\n", err)
   }
 
-  // Launch the customer web application
-  // go func() {
-  //   customer.Serve(&controllers.Application{
-  //     Fabric: &fSetup,
-  //   })
-  // }()
-
-  // // Launch the merchant web application
-  // merchant.Serve(&controllers.Application{
-  //   Fabric: &fSetup,
-  // })
-
   // Create 2 servers - 1 merchant, 1 customer
   web.StartServers(&controllers.Application{
     Fabric: &fSetup,
