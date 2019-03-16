@@ -228,18 +228,6 @@ func (t *SCC300NetworkChaincode) initCommitmentData(stub shim.ChaincodeStubInter
       return shim.Error(err.Error())
     }
 
-    //  ==== Index the commitment to enable event name-based range queries ==== //
-    // indexName := "event"
-    // ownerNameIndexKey, err := stub.CreateCompositeKey(indexName, []string{eventName})
-    // if err != nil {
-    //   return shim.Error(err.Error())
-    // }
-
-    //  ==== Save index entry to state. Only the key name is needed, no need to store a duplicate copy of the data. ==== //
-    //  ==== Note - passing a 'nil' value will effectively delete the key from state, therefore we pass null character as value. ==== //
-    // value := []byte{0x00}
-    // stub.PutState(ownerNameIndexKey, value)
-
     // ==== Data saved and indexed. Return success ==== //
     fmt.Println("- end init commitment data")
 

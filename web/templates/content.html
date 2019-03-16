@@ -35,6 +35,35 @@
         {{ if ne (len $source) 0 }}
           <button class="uk-button uk-button-primary" uk-toggle="target: #addCreateEvent" type="submit">Add Commitment</button>
         {{ end }}
+         <!-- Add Create Event Modal Content -->
+        <div id="addCreateEvent" uk-modal>
+          <div class="uk-modal-dialog">
+            <button class="uk-modal-close-default" type="button" uk-close></button>
+            <div class="uk-modal-header">
+              <h2 class="uk-modal-title">Add Commitment</h2>
+            </div>
+            <div class="uk-modal-body">
+              <div>
+                <div id="spec-summary">
+                  <pre>{{ $source }}</pre>
+                  <hr />
+                </div>
+              </div>
+              <form>
+                <input class="uk-input uk-margin-small" type="text" id="debtor" name="debtor" placeholder="Enter debtor...">
+                <input class="uk-input uk-margin-small" type="text" id="creditor" name="creditor" placeholder="Enter creditor...">
+                {{ range $key, $item := $parsedSpec.CreateEvent.Args }}
+                  {{ $argName := $item.Name }}
+
+                  <input class="uk-input uk-margin-small" type="text" id="{{ $argName }}" name="{{ $argName }}" placeholder="Enter {{ $argName }}...">
+                {{ end }}
+                <input type="hidden" name="docType" value="{{ $parsedSpec.CreateEvent.Name }}">
+                <input type="hidden" name="submitted-commitment" value="true">
+                <button class="uk-button uk-button-primary uk-width-1-1 uk-margin-small" type="submit">Submit</button>
+              </form>
+            </div>
+          </div>
+        </div>
         <br /><br />
         <div id="commitments">
           {{ if and (not .Failed) (ne .NumComs 0) }}
@@ -117,35 +146,6 @@
                         </div>
                         <div class="uk-modal-footer">
                           <button class="uk-button uk-button-primary uk-modal-close" type="button">Close</button>
-                        </div>
-                      </div>
-                    </div>
-                    <!-- Add Create Event Modal Content -->
-                    <div id="addCreateEvent" uk-modal>
-                      <div class="uk-modal-dialog">
-                        <button class="uk-modal-close-default" type="button" uk-close></button>
-                        <div class="uk-modal-header">
-                          <h2 class="uk-modal-title">Add Commitment</h2>
-                        </div>
-                        <div class="uk-modal-body">
-                          <div>
-                            <div id="spec-summary">
-                              <pre>{{ $source }}</pre>
-                              <hr />
-                            </div>
-                          </div>
-                          <form>
-                            <input class="uk-input uk-margin-small" type="text" id="debtor" name="debtor" placeholder="Enter debtor...">
-                            <input class="uk-input uk-margin-small" type="text" id="creditor" name="creditor" placeholder="Enter creditor...">
-                            {{ range $key, $item := $parsedSpec.CreateEvent.Args }}
-                              {{ $argName := $item.Name }}
-
-                              <input class="uk-input uk-margin-small" type="text" id="{{ $argName }}" name="{{ $argName }}" placeholder="Enter {{ $argName }}...">
-                            {{ end }}
-                            <input type="hidden" name="docType" value="{{ $parsedSpec.CreateEvent.Name }}">
-                            <input type="hidden" name="submitted-commitment" value="true">
-                            <button class="uk-button uk-button-primary uk-width-1-1 uk-margin-small" type="submit">Submit</button>
-                          </form>
                         </div>
                       </div>
                     </div>
