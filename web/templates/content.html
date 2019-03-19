@@ -82,7 +82,7 @@
                 <tbody>
                   {{ range $key, $value := .Coms }}
                     {{ $createdData := (index $value.States 0).Data }}
-                    <tr uk-toggle="target: #{{ $createdData.debtor }}">
+                    <tr uk-toggle="target: #data-{{ $createdData.comID }}">
                       <td class="uk-text uk-text-small">{{ $createdData.comID }}</td>
                       <td class="uk-text uk-text-small">{{ $createdData.debtor }}</td>
                       <td class="uk-text uk-text-small">{{ $createdData.creditor }}</td>
@@ -96,7 +96,7 @@
                       </td>
                     </tr>
                     <!-- Modal content -->
-                    <div id="{{ $createdData.debtor }}" uk-modal>
+                    <div id="data-{{ $createdData.comID }}" uk-modal>
                       <div class="uk-modal-dialog">
                         <button class="uk-modal-close-default" type="button" uk-close></button>
                         <div class="uk-modal-header">
@@ -119,7 +119,7 @@
                             {{ $detachedData := (index $value.States 1).Data }}
                             {{ if eq (len $detachedData) 0 }}
                               <span style="font-style: italic;">No Detach Event Data</span><br />
-                              <button class="uk-button uk-button-link" style="text-transform: capitalize;" uk-toggle="target: #{{ $createdData.creditor}}">Add Data</button>
+                              <button class="uk-button uk-button-link" style="text-transform: capitalize;" uk-toggle="target: #add-data-{{ $createdData.comID}}">Add Data</button>
                             {{ else }}
                               Detach Event Data: { <br />
                                 {{ range $key, $item := $detachedData }}
@@ -133,7 +133,7 @@
                             {{ if eq (len $dischargedData) 0 }}
                               <span style="font-style: italic;">No Discharge Event Data</span><br />
                               {{ if ne (len $detachedData) 0 }}
-                                <button class="uk-button uk-button-link" style="text-transform: capitalize;" uk-toggle="target: #adddata">Add Data</button>
+                                <button class="uk-button uk-button-link" style="text-transform: capitalize;" uk-toggle="target: #add-data-{{ $createdData.comID}}">Add Data</button>
                               {{ end }}
                             {{ else }}
                               Discharge Event Data: { <br />
@@ -150,7 +150,7 @@
                       </div>
                     </div>
                     <!-- Add Data Modal Content -->
-                    <div id="{{ $createdData.creditor }}" uk-modal>
+                    <div id="add-data-{{ $createdData.comID }}" uk-modal>
                       <div class="uk-modal-dialog">
                         <button class="uk-modal-close-default" type="button" uk-close></button>
                         <div class="uk-modal-header">
