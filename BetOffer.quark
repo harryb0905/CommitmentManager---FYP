@@ -1,0 +1,4 @@
+spec BetOffer dID to cID
+  create ReducedOdds [odds,type]
+  detach Bet [amount,type] deadline=14
+  discharge Payment [winnings] deadline=2
